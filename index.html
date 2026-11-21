@@ -162,4 +162,464 @@
   <div id="statusMsg" class="status">⏳ NSE सर्व्हरवरून ताजा डेटा आणत आहोत, कृपया १५–३० सेकंद प्रतीक्षा करा...</div>
   <div id="cardsGrid" class="grid"></div>
 
-  <footer
+  <footer id="disclaimerFooter"></footer>
+
+  <!-- Candlestick Chart & Option Chain Modal -->
+  <div id="stockModal" class="modal-bg" onclick="if(event.target===this) closeModal()">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h2 id="mTitle" style="font-size:1.15rem;color:#38bdf8">Stock</h2>
+          <div id="mSub" style="font-size:0.78rem;color:#94a3b8"></div>
+        </div>
+        <button class="close-btn" onclick="closeModal()">✕</button>
+      </div>
+      <div id="mOC" class="oc-strip" style="margin-bottom:8px"></div>
+      <div class="legend">
+        <span><strong style="color:#10b981">▮</strong> Bullish</span>
+        <span><strong style="color:#ef4444">▮</strong> Bearish</span>
+        <span><strong style="color:#38bdf8">—</strong> 20-EMA</span>
+        <span><strong style="color:#fbbf24">--</strong> Target</span>
+        <span><strong style="color:#f87171">--</strong> Stop Loss</span>
+      </div>
+      <canvas id="priceChart" width="640" height="240"></canvas>
+      <div id="mZones" class="active-zone"></div>
+      <div class="calc-box">
+        <div>
+          <strong id="calcLabel">Position Size Calculator:</strong> ₹
+          <input type="number" id="capInput" value="25000" oninput="updateCalc()" />
+        </div>
+        <div id="calcResult" style="margin-top:6px;color:#10b981"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const I18N = {
+      mr: {
+        swingBtn: "📈 स्विंग ट्रेडिंग (Equity)",
+        fnoBtn: "⚡ F&O टर्मिनल (Options)",
+        swingBanner: "<strong>📈 Swing Trading विभाग:</strong> प्रत्येक कार्डवर सक्रिय सिग्नलनुसार (BUY किंवा SELL) फक्त एकच स्पष्ट <strong>Entry Zone, Target आणि Stop Loss</strong> दिला आहे.",
+        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> वर <strong>Nifty / Bank Nifty Option Chain (PCR, Support, Resistance)</strong> आणि खाली F&O शेअर्ससाठी सुचवलेले <strong>Call/Put Strike (CE/PE)</strong> दिले आहेत. (Auto-Refresh: दर ६० सेकंदांनी)",
+        chartBtn: "📊 कँडलस्टिक चार्ट आणि विश्लेषण पहा",
+        allTab: "सर्व शेअर्स",
+        buyTab: "Buy झोन",
+        sellTab: "Sell झोन",
+        calcLabel: "भांडवलानुसार क्वांटिटी मोजा:",
+        loadingWait: "⏳ NSE सर्व्हरवरून ताजा डेटा आणत आहोत, कृपया १५–३० सेकंद प्रतीक्षा करा...",
+        disclaimer: "<strong>अस्वीकरण (Disclaimer):</strong> MarketEye Pro हे केवळ शैक्षणिक आणि तांत्रिक विश्लेषणासाठी (Educational & Analytical Purpose Only) तयार केलेले साधन आहे. आम्ही SEBI-नोंदणीकृत गुंतवणूक सल्लागार नाही. कोणताही ट्रेड घेण्यापूर्वी स्वतःचा अभ्यास करावा किंवा नोंदणीकृत आर्थिक सल्लागाराचा सल्ला घ्यावा."
+      },
+      hi: {
+        swingBtn: "📈 स्विंग ट्रेडिंग (Equity)",
+        fnoBtn: "⚡ F&O टर्मिनल (Options)",
+        swingBanner: "<strong>📈 Swing Trading विभाग:</strong> प्रत्येक कार्ड पर सक्रिय सिग्नल के अनुसार (BUY या SELL) केवल एक स्पष्ट <strong>Entry Zone, Target और Stop Loss</strong> दिया गया है।",
+        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> ऊपर <strong>Nifty / Bank Nifty Option Chain (PCR, Support, Resistance)</strong> और नीचे F&O शेयरों के लिए सुझाए गए <strong>Call/Put Strike (CE/PE)</strong> दिए गए हैं। (Auto-Refresh: हर 60 सेकंड में)",
+        chartBtn: "📊 कैंडलस्टिक चार्ट और विश्लेषण देखें",
+        allTab: "सभी शेयर",
+        buyTab: "Buy ज़ोन",
+        sellTab: "Sell ज़ोन",
+        calcLabel: "पूंजी के अनुसार क्वांटिटी गणना:",
+        loadingWait: "⏳ NSE सर्वर से ताज़ा डेटा लोड हो रहा है, कृपया 15–30 सेकंड प्रतीक्षा करें...",
+        disclaimer: "<strong>अस्वीकरण (Disclaimer):</strong> MarketEye Pro केवल शैक्षणिक और तकनीकी विश्लेषण (Educational & Analytical Purpose Only) के लिए बनाया गया है। हम SEBI-पंजीकृत निवेश सलाहकार नहीं हैं। कोई भी ट्रेड लेने से पहले अपना स्वयं का विश्लेषण करें या वित्तीय सलाहकार से परामर्श लें।"
+      },
+      en: {
+        swingBtn: "📈 Swing Trading (Equity)",
+        fnoBtn: "⚡ F&O Terminal (Options)",
+        swingBanner: "<strong>📈 Swing Trading Section:</strong> Each card shows a single active trade plan (BUY or SELL) with clear <strong>Entry Zone, Target & Stop Loss</strong>.",
+        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> Live <strong>Nifty & Bank Nifty Option Chain (PCR, Support, Resistance)</strong> and suggested <strong>Call/Put Strikes (CE/PE)</strong>. (Auto-Refresh: Every 60s)",
+        chartBtn: "📊 View Candlestick Chart & Analysis",
+        allTab: "All Stocks",
+        buyTab: "Buy Zone",
+        sellTab: "Sell Zone",
+        calcLabel: "Position Size Calculator:",
+        loadingWait: "⏳ Waking up server & fetching fresh NSE market data (15–30 seconds)...",
+        disclaimer: "<strong>Disclaimer:</strong> MarketEye Pro is built strictly for educational and technical analysis purposes only. We are not SEBI-registered investment advisors. Please do your own research or consult a certified financial advisor before trading."
+      }
+    };
+
+    let allStocks = [];
+    let currentMode = 'SWING';
+    let currentFilter = 'ALL';
+    let currentLang = localStorage.getItem('marketeye_lang') || 'mr';
+    let watchlist = JSON.parse(localStorage.getItem('marketeye_wl') || '["RELIANCE","TCS","HAL","BHARTIARTL"]');
+    let activeStock = null;
+    let refreshTimer = null;
+
+    document.getElementById('langSelect').value = currentLang;
+
+    function updateMarketStatus() {
+      const badge = document.getElementById('mktStatusBadge');
+      const now = new Date();
+      const istOffset = 5.5 * 60 * 60 * 1000;
+      const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffset);
+      const day = istDate.getDay();
+      const mins = istDate.getHours() * 60 + istDate.getMinutes();
+
+      const isWeekday = day >= 1 && day <= 5;
+      const isMarketHours = mins >= (9 * 60 + 15) && mins <= (15 * 60 + 30);
+
+      if (isWeekday && isMarketHours) {
+        badge.className = 'mkt-badge mkt-open';
+        badge.textContent = '● LIVE MARKET (NSE)';
+      } else {
+        badge.className = 'mkt-badge mkt-closed';
+        badge.textContent = '● MARKET CLOSED (Closing Data)';
+      }
+    }
+
+    function changeLang(lang) {
+      currentLang = lang;
+      localStorage.setItem('marketeye_lang', lang);
+      applyTranslations();
+      renderCards(allStocks);
+    }
+
+    function applyTranslations() {
+      const t = I18N[currentLang];
+      document.getElementById('btnSwing').innerHTML = t.swingBtn;
+      document.getElementById('btnFno').innerHTML = t.fnoBtn;
+      document.getElementById('tabAll').textContent = t.allTab;
+      document.getElementById('tabBuy').textContent = t.buyTab;
+      document.getElementById('tabSell').textContent = t.sellTab;
+      document.getElementById('calcLabel').textContent = t.calcLabel;
+      document.getElementById('disclaimerFooter').innerHTML = t.disclaimer;
+      const banner = document.getElementById('sectionBanner');
+      banner.innerHTML = currentMode === 'SWING' ? t.swingBanner : t.fnoBanner;
+    }
+
+    function setupAutoRefresh() {
+      if (refreshTimer) clearInterval(refreshTimer);
+      const intervalMs = currentMode === 'FNO' ? 60000 : 300000;
+      refreshTimer = setInterval(() => loadDashboard(true), intervalMs);
+    }
+
+    function switchMode(mode) {
+      currentMode = mode;
+      const btnSwing = document.getElementById('btnSwing');
+      const btnFno = document.getElementById('btnFno');
+      const banner = document.getElementById('sectionBanner');
+      const idxSec = document.getElementById('indicesSection');
+
+      if (mode === 'SWING') {
+        btnSwing.className = 'mode-btn active-swing';
+        btnFno.className = 'mode-btn';
+        idxSec.style.display = 'none';
+        banner.className = 'section-banner';
+      } else {
+        btnSwing.className = 'mode-btn';
+        btnFno.className = 'mode-btn active-fno';
+        idxSec.style.display = 'grid';
+        banner.className = 'section-banner fno-theme';
+      }
+      applyTranslations();
+      setupAutoRefresh();
+      renderCards(allStocks);
+    }
+
+    function updateWlCount() {
+      document.getElementById('wlCount').textContent = watchlist.length;
+    }
+
+    function toggleWatchlist(e, sym) {
+      e.stopPropagation();
+      watchlist = watchlist.includes(sym) ? watchlist.filter(s => s !== sym) : [...watchlist, sym];
+      localStorage.setItem('marketeye_wl', JSON.stringify(watchlist));
+      updateWlCount();
+      renderCards(allStocks);
+    }
+
+    function formatIdx(valId, ocId, sentId, obj) {
+      const el = document.getElementById(valId);
+      const ocEl = document.getElementById(ocId);
+      const sentEl = document.getElementById(sentId);
+      if (!obj || !obj.price) {
+        el.innerHTML = '<span style="color:#94a3b8">Unavailable</span>';
+        ocEl.textContent = 'Option Chain unavailable';
+        return;
+      }
+      const cls = obj.change_pct >= 0 ? 'pos' : 'neg';
+      const sign = obj.change_pct >= 0 ? '+' : '';
+      el.innerHTML = `₹${obj.price.toLocaleString('en-IN')} <span class="${cls}" style="font-size:0.9rem">(${sign}${obj.change_pct}%)</span>`;
+      const oc = obj.option_chain || {};
+      sentEl.textContent = oc.sentiment || '';
+      const srcLabel = oc.source || 'Derived OI Zone';
+      ocEl.innerHTML = `
+        <span class="oc-tag">PCR: <strong>${oc.pcr || '-'}</strong></span>
+        <span class="oc-tag">Support: <strong style="color:#10b981">${oc.support || '-'}</strong></span>
+        <span class="oc-tag">Resistance: <strong style="color:#ef4444">${oc.resistance || '-'}</strong></span>
+        <span class="src-badge">${srcLabel}</span>
+      `;
+    }
+
+    function renderCards(list) {
+      const grid = document.getElementById('cardsGrid');
+      const status = document.getElementById('statusMsg');
+      const t = I18N[currentLang];
+
+      let filtered = currentMode === 'FNO' ? list.filter(s => s.is_fno) : list;
+      if (currentFilter === 'BUY') filtered = filtered.filter(s => s.side === 'BUY');
+      if (currentFilter === 'SELL') filtered = filtered.filter(s => s.side === 'SELL');
+      if (currentFilter === 'WATCHLIST') filtered = filtered.filter(s => watchlist.includes(s.symbol));
+
+      if (!filtered.length) {
+        status.textContent = 'No stocks found for this filter.';
+        grid.innerHTML = '';
+        return;
+      }
+      status.textContent = `Showing ${filtered.length} NSE Stocks`;
+
+      grid.innerHTML = filtered.map(s => {
+        const isBuy = s.side === 'BUY';
+        const chgCls = s.change_pct >= 0 ? 'pos' : 'neg';
+        const sign = s.change_pct >= 0 ? '+' : '';
+        const isSaved = watchlist.includes(s.symbol);
+        const noteText = (s.notes && s.notes[currentLang]) ? s.notes[currentLang] : '';
+
+        const activePlanHtml = isBuy
+          ? `<div class="active-zone">
+               <div><strong style="color:#10b981">Buy Zone:</strong> ${s.trade_zones.buy_zone}</div>
+               <div><strong>Target (Profit):</strong> <span style="color:#fbbf24">₹${s.trade_zones.buy_target}</span> | <strong>Stop Loss:</strong> <span style="color:#f87171">₹${s.trade_zones.buy_sl}</span></div>
+             </div>`
+          : `<div class="active-zone sell-zone">
+               <div><strong style="color:#ef4444">Sell Zone:</strong> ${s.trade_zones.sell_zone}</div>
+               <div><strong>Target:</strong> <span style="color:#fbbf24">₹${s.trade_zones.sell_target}</span> | <strong>Stop Loss:</strong> <span style="color:#f87171">₹${s.trade_zones.sell_sl}</span></div>
+             </div>`;
+
+        const bodyHtml = currentMode === 'SWING' ? `
+          <div class="strength-box">
+            <div class="strength-top">
+              <span>Trade Strength: ${s.strength_score}/100 (${s.strength_label})</span>
+            </div>
+            <div class="strength-sub">${s.strength_detail}</div>
+          </div>
+          ${noteText ? `<div class="ai-note">${noteText}</div>` : ''}
+          ${activePlanHtml}
+          <div class="pillars">
+            <span class="pill">20-EMA: ₹${s.ema20}</span>
+            <span class="pill">50-EMA: ₹${s.ema50}</span>
+            <span class="pill">RSI: ${s.rsi}</span>
+            <span class="pill">Vol: ${s.volume_spike}</span>
+          </div>
+        ` : `
+          <div class="strength-box">
+            <div class="strength-top">
+              <span style="color:#38bdf8">${s.fno_strike}</span>
+              <span>${s.fno_bias}</span>
+            </div>
+            <div class="strength-sub">Support: ₹${s.support} | Resistance: ₹${s.resistance}</div>
+          </div>
+          ${noteText ? `<div class="ai-note">${noteText}</div>` : ''}
+          ${activePlanHtml}
+        `;
+
+        return `
+          <div class="card" onclick="openStockModal('${s.symbol}')">
+            <div class="card-top">
+              <div>
+                <div class="sym-row">
+                  <button class="star-btn ${isSaved ? 'saved' : ''}" onclick="toggleWatchlist(event, '${s.symbol}')">★</button>
+                  <span class="sym">${s.symbol}</span>
+                </div>
+                <div class="cname">${s.name}</div>
+              </div>
+              <span class="badge ${isBuy ? 'buy' : 'sell'}">${s.signal}</span>
+            </div>
+            <div class="price-row">
+              <div class="price">₹${s.price} <span class="${chgCls}" style="font-size:0.9rem">(${sign}${s.change_pct}%)</span></div>
+            </div>
+            ${bodyHtml}
+            <div class="card-foot">
+              <button class="chart-btn" onclick="event.stopPropagation(); openStockModal('${s.symbol}')">${t.chartBtn}</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setFilter(type, btn) {
+      currentFilter = type;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      renderCards(allStocks);
+    }
+
+    async function loadDashboard(silent = false) {
+      updateMarketStatus();
+      const btn = document.getElementById('refreshBtn');
+      const status = document.getElementById('statusMsg');
+      const t = I18N[currentLang];
+      if (!silent) {
+        btn.disabled = true;
+        btn.textContent = 'Loading...';
+        status.textContent = t.loadingWait;
+      }
+      updateWlCount();
+
+      const mergedSyms = Array.from(new Set([...watchlist, "BHARTIARTL", "RELIANCE", "TCS", "HDFCBANK", "INFY", "SBIN", "TATAMOTORS", "TATASTEEL", "ZOMATO", "IRCTC", "HAL", "BEL", "ITC", "AXISBANK", "WIPRO", "IDEA", "YESBANK", "SUZLON"]));
+
+      try {
+        const [idxRes, sigRes] = await Promise.all([
+          fetch('/indices').then(r => r.json()),
+          fetch(`/signals?symbols=${mergedSyms.join(',')}`).then(r => r.json())
+        ]);
+        formatIdx('niftyVal', 'niftyOC', 'niftySent', idxRes.nifty);
+        formatIdx('bnVal', 'bnOC', 'bnSent', idxRes.banknifty);
+        allStocks = sigRes.stocks || [];
+        renderCards(allStocks);
+        const modeTxt = currentMode === 'FNO' ? '60s Auto' : '5m Auto';
+        document.getElementById('lastUpdated').textContent = `Updated: ${new Date().toLocaleTimeString('en-IN')} (${modeTxt})`;
+      } catch (err) {
+        if (!silent) status.textContent = 'Server waking up... Please click Refresh once.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Refresh';
+      }
+    }
+
+    let searchTimer;
+    function onSearchInput(val) {
+      clearTimeout(searchTimer);
+      const box = document.getElementById('suggestions');
+      if (!val.trim()) { box.innerHTML = ''; return; }
+      searchTimer = setTimeout(async () => {
+        const res = await fetch(`/suggest/${encodeURIComponent(val.trim())}`).then(r => r.json());
+        box.innerHTML = (res.suggestions || []).map(item =>
+          `<div class="sug-item" onclick="selectStock('${item.symbol}')"><strong>${item.symbol}</strong> - ${item.name}</div>`
+        ).join('');
+      }, 250);
+    }
+
+    function selectStock(sym) {
+      document.getElementById('suggestions').innerHTML = '';
+      document.getElementById('searchInput').value = sym;
+      openStockModal(sym);
+    }
+
+    async function openStockModal(sym) {
+      const modal = document.getElementById('stockModal');
+      modal.classList.add('open');
+      document.getElementById('mTitle').textContent = `${sym} — Loading Candlestick Chart...`;
+      document.getElementById('mSub').textContent = '';
+
+      const res = await fetch(`/search/${sym}`).then(r => r.json());
+      if (!res.stock) {
+        document.getElementById('mTitle').textContent = res.error || 'Error loading stock';
+        return;
+      }
+      const s = res.stock;
+      activeStock = s;
+      const isBuy = s.side === 'BUY';
+      document.getElementById('mTitle').textContent = `${s.symbol} — ₹${s.price} (${s.signal})`;
+      document.getElementById('mSub').textContent = `${s.name} | Trade Strength: ${s.strength_score}/100`;
+
+      const oc = s.option_chain || {};
+      const srcLabel = oc.source || 'Derived OI Zone';
+      document.getElementById('mOC').innerHTML = `
+        <span class="oc-tag">Option PCR: <strong>${oc.pcr || '-'}</strong></span>
+        <span class="oc-tag">Sentiment: <strong>${oc.sentiment || '-'}</strong></span>
+        <span class="oc-tag">Support: <strong style="color:#10b981">₹${oc.support || '-'}</strong></span>
+        <span class="oc-tag">Resistance: <strong style="color:#ef4444">₹${oc.resistance || '-'}</strong></span>
+        <span class="src-badge">${srcLabel}</span>
+      `;
+
+      const zBox = document.getElementById('mZones');
+      if (isBuy) {
+        zBox.className = 'active-zone';
+        zBox.innerHTML = `<div><strong style="color:#10b981">Active Buy Zone:</strong> ${s.trade_zones.buy_zone} | <strong>Target:</strong> <span style="color:#fbbf24">₹${s.trade_zones.buy_target}</span> | <strong>Stop Loss:</strong> <span style="color:#f87171">₹${s.trade_zones.buy_sl}</span></div>`;
+      } else {
+        zBox.className = 'active-zone sell-zone';
+        zBox.innerHTML = `<div><strong style="color:#ef4444">Active Sell Zone:</strong> ${s.trade_zones.sell_zone} | <strong>Target:</strong> <span style="color:#fbbf24">₹${s.trade_zones.sell_target}</span> | <strong>Stop Loss:</strong> <span style="color:#f87171">₹${s.trade_zones.sell_sl}</span></div>`;
+      }
+
+      updateCalc();
+      drawCandlestickChart(s);
+    }
+
+    function updateCalc() {
+      if (!activeStock) return;
+      const cap = parseFloat(document.getElementById('capInput').value) || 0;
+      const qty = Math.floor(cap / activeStock.price);
+      const riskPerShare = Math.abs(activeStock.price - activeStock.stop_loss);
+      const rewardPerShare = Math.abs(activeStock.target - activeStock.price);
+      const rr = riskPerShare > 0 ? (rewardPerShare / riskPerShare).toFixed(2) : '2.0';
+      document.getElementById('calcResult').textContent =
+        `Qty: ${qty} shares | Max Risk: ₹${Math.round(qty * riskPerShare)} | Target Profit: ₹${Math.round(qty * rewardPerShare)} (R:R 1:${rr})`;
+    }
+
+    function closeModal() {
+      document.getElementById('stockModal').classList.remove('open');
+    }
+
+    function drawCandlestickChart(s) {
+      const canvas = document.getElementById('priceChart');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const chart = s.chart;
+      if (!chart || !chart.candles || !chart.candles.length) return;
+
+      const candles = chart.candles;
+      const emas = chart.ema20;
+      const highs = candles.map(c => c.high);
+      const lows = candles.map(c => c.low);
+      const minV = Math.min(...lows, s.stop_loss) * 0.992;
+      const maxV = Math.max(...highs, s.target) * 1.008;
+
+      const padL = 16, padR = 54, padT = 16, padB = 22;
+      const w = canvas.width - padL - padR;
+      const h = canvas.height - padT - padB;
+      const getX = i => padL + ((i + 0.5) / candles.length) * w;
+      const getY = v => padT + h - ((v - minV) / (maxV - minV || 1)) * h;
+
+      ctx.strokeStyle = '#1e293b';
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px sans-serif';
+      for (let g = 0; g <= 4; g++) {
+        const y = padT + (h / 4) * g;
+        const val = (maxV - ((maxV - minV) / 4) * g).toFixed(0);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(canvas.width - padR, y); ctx.stroke();
+        ctx.fillText('₹' + val, canvas.width - padR + 4, y + 3);
+      }
+
+      const drawLevel = (price, color, label) => {
+        const y = getY(price);
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(canvas.width - padR, y); ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.fillText(`${label} ₹${price}`, padL + 4, y - 3);
+        ctx.restore();
+      };
+      drawLevel(s.target, '#fbbf24', 'TGT');
+      drawLevel(s.stop_loss, '#f87171', 'SL');
+
+      const candleW = Math.max(4, (w / candles.length) * 0.6);
+      candles.forEach((c, i) => {
+        const x = getX(i);
+        const isUp = c.close >= c.open;
+        ctx.strokeStyle = isUp ? '#10b981' : '#ef4444';
+        ctx.fillStyle = isUp ? '#10b981' : '#ef4444';
+        ctx.beginPath();
+        ctx.moveTo(x, getY(c.high));
+        ctx.lineTo(x, getY(c.low));
+        ctx.stroke();
+
+        const top = getY(Math.max(c.open, c.close));
+        const bot = getY(Math.min(c.open, c.close));
+        ctx.fillRect(x - candleW / 2, top, candleW, Math.max(2, bot - top));
+      });
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      emas.forEach((v, i) => i === 0 ? ctx.moveTo(getX(i), getY(v)) : ctx.lineTo(getX(i), getY(v)));
+      ctx.stroke();
+    }
+
+    updateMarketStatus();
+    applyTranslations();
+    setupAutoRefresh();
+    loadDashboard();
+  </script>
+</body>
+</html>
