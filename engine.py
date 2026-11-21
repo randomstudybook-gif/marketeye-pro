@@ -18,40 +18,46 @@ SCAN_UNIVERSE = [
     "ITC", "AXISBANK", "WIPRO", "IDEA", "YESBANK", "SUZLON"
 ]
 
+FNO_STOCKS = [
+    "RELIANCE", "TCS", "HDFCBANK", "BHARTIARTL", "ICICIBANK", "INFY",
+    "SBIN", "TATAMOTORS", "TATASTEEL", "AXISBANK", "HAL", "BEL",
+    "ITC", "BAJFINANCE", "LT", "SUNPHARMA", "MARUTI", "WIPRO"
+]
+
 NSE_STOCKS = [
-    {"symbol": "RELIANCE", "name": "Reliance Industries Ltd"},
-    {"symbol": "TCS", "name": "Tata Consultancy Services Ltd"},
-    {"symbol": "HDFCBANK", "name": "HDFC Bank Ltd"},
-    {"symbol": "BHARTIARTL", "name": "Bharti Airtel Ltd"},
-    {"symbol": "ICICIBANK", "name": "ICICI Bank Ltd"},
-    {"symbol": "INFY", "name": "Infosys Ltd"},
-    {"symbol": "SBIN", "name": "State Bank of India"},
-    {"symbol": "HINDUNILVR", "name": "Hindustan Unilever Ltd"},
-    {"symbol": "ITC", "name": "ITC Ltd"},
-    {"symbol": "LT", "name": "Larsen & Toubro Ltd"},
-    {"symbol": "BAJFINANCE", "name": "Bajaj Finance Ltd"},
-    {"symbol": "MARUTI", "name": "Maruti Suzuki India Ltd"},
-    {"symbol": "SUNPHARMA", "name": "Sun Pharmaceutical Industries"},
-    {"symbol": "TATAMOTORS", "name": "Tata Motors Ltd"},
-    {"symbol": "TATASTEEL", "name": "Tata Steel Ltd"},
-    {"symbol": "TITAN", "name": "Titan Company Ltd"},
-    {"symbol": "NTPC", "name": "NTPC Ltd"},
-    {"symbol": "AXISBANK", "name": "Axis Bank Ltd"},
-    {"symbol": "KOTAKBANK", "name": "Kotak Mahindra Bank Ltd"},
-    {"symbol": "ADANIENT", "name": "Adani Enterprises Ltd"},
-    {"symbol": "ADANIPORTS", "name": "Adani Ports & SEZ Ltd"},
-    {"symbol": "WIPRO", "name": "Wipro Ltd"},
-    {"symbol": "HCLTECH", "name": "HCL Technologies Ltd"},
-    {"symbol": "TECHM", "name": "Tech Mahindra Ltd"},
-    {"symbol": "ZOMATO", "name": "Zomato Ltd"},
-    {"symbol": "IRCTC", "name": "IRCTC Ltd"},
-    {"symbol": "HAL", "name": "Hindustan Aeronautics Ltd"},
-    {"symbol": "BEL", "name": "Bharat Electronics Ltd"},
-    {"symbol": "TRENT", "name": "Trent Ltd"},
-    {"symbol": "DIXON", "name": "Dixon Technologies India Ltd"},
-    {"symbol": "SUZLON", "name": "Suzlon Energy Ltd"},
-    {"symbol": "IDEA", "name": "Vodafone Idea Ltd"},
-    {"symbol": "YESBANK", "name": "Yes Bank Ltd"}
+    {"symbol": "RELIANCE", "name": "Reliance Industries Ltd", "fno": True},
+    {"symbol": "TCS", "name": "Tata Consultancy Services Ltd", "fno": True},
+    {"symbol": "HDFCBANK", "name": "HDFC Bank Ltd", "fno": True},
+    {"symbol": "BHARTIARTL", "name": "Bharti Airtel Ltd", "fno": True},
+    {"symbol": "ICICIBANK", "name": "ICICI Bank Ltd", "fno": True},
+    {"symbol": "INFY", "name": "Infosys Ltd", "fno": True},
+    {"symbol": "SBIN", "name": "State Bank of India", "fno": True},
+    {"symbol": "HINDUNILVR", "name": "Hindustan Unilever Ltd", "fno": True},
+    {"symbol": "ITC", "name": "ITC Ltd", "fno": True},
+    {"symbol": "LT", "name": "Larsen & Toubro Ltd", "fno": True},
+    {"symbol": "BAJFINANCE", "name": "Bajaj Finance Ltd", "fno": True},
+    {"symbol": "MARUTI", "name": "Maruti Suzuki India Ltd", "fno": True},
+    {"symbol": "SUNPHARMA", "name": "Sun Pharmaceutical Industries", "fno": True},
+    {"symbol": "TATAMOTORS", "name": "Tata Motors Ltd", "fno": True},
+    {"symbol": "TATASTEEL", "name": "Tata Steel Ltd", "fno": True},
+    {"symbol": "TITAN", "name": "Titan Company Ltd", "fno": True},
+    {"symbol": "NTPC", "name": "NTPC Ltd", "fno": True},
+    {"symbol": "AXISBANK", "name": "Axis Bank Ltd", "fno": True},
+    {"symbol": "KOTAKBANK", "name": "Kotak Mahindra Bank Ltd", "fno": True},
+    {"symbol": "ADANIENT", "name": "Adani Enterprises Ltd", "fno": True},
+    {"symbol": "ADANIPORTS", "name": "Adani Ports & SEZ Ltd", "fno": True},
+    {"symbol": "WIPRO", "name": "Wipro Ltd", "fno": True},
+    {"symbol": "HCLTECH", "name": "HCL Technologies Ltd", "fno": True},
+    {"symbol": "TECHM", "name": "Tech Mahindra Ltd", "fno": True},
+    {"symbol": "ZOMATO", "name": "Zomato Ltd", "fno": False},
+    {"symbol": "IRCTC", "name": "IRCTC Ltd", "fno": True},
+    {"symbol": "HAL", "name": "Hindustan Aeronautics Ltd", "fno": True},
+    {"symbol": "BEL", "name": "Bharat Electronics Ltd", "fno": True},
+    {"symbol": "TRENT", "name": "Trent Ltd", "fno": True},
+    {"symbol": "DIXON", "name": "Dixon Technologies India Ltd", "fno": True},
+    {"symbol": "SUZLON", "name": "Suzlon Energy Ltd", "fno": False},
+    {"symbol": "IDEA", "name": "Vodafone Idea Ltd", "fno": True},
+    {"symbol": "YESBANK", "name": "Yes Bank Ltd", "fno": False}
 ]
 
 CACHE = {}
@@ -93,16 +99,15 @@ def fetch_nse_option_chain(symbol: str, spot_price: float = 0.0, is_index: bool 
             "Accept-Language": "en-US,en;q=0.9",
             "Referer": "https://www.nseindia.com/option-chain"
         }
-        session.get("https://www.nseindia.com", headers=nse_headers, timeout=6)
+        session.get("https://www.nseindia.com", headers=nse_headers, timeout=5)
         endpoint = "option-chain-indices" if is_index else "option-chain-equities"
         oc_url = f"https://www.nseindia.com/api/{endpoint}?symbol={symbol}"
-        r = session.get(oc_url, headers=nse_headers, timeout=8)
+        r = session.get(oc_url, headers=nse_headers, timeout=6)
         if r.status_code == 200:
             raw = r.json()
             records = raw.get("records", {}).get("data", [])
             expiry = raw.get("records", {}).get("expiryDates", [""])[0]
-            tot_ce_oi = 0
-            tot_pe_oi = 0
+            tot_ce_oi, tot_pe_oi = 0, 0
             max_ce_oi, res_strike = 0, 0
             max_pe_oi, sup_strike = 0, 0
 
@@ -110,10 +115,8 @@ def fetch_nse_option_chain(symbol: str, spot_price: float = 0.0, is_index: bool 
                 if item.get("expiryDate") != expiry:
                     continue
                 sp = item.get("strikePrice", 0)
-                ce = item.get("CE", {})
-                pe = item.get("PE", {})
-                ce_oi = ce.get("openInterest", 0) or 0
-                pe_oi = pe.get("openInterest", 0) or 0
+                ce_oi = (item.get("CE", {}) or {}).get("openInterest", 0) or 0
+                pe_oi = (item.get("PE", {}) or {}).get("openInterest", 0) or 0
                 tot_ce_oi += ce_oi
                 tot_pe_oi += pe_oi
                 if ce_oi > max_ce_oi:
@@ -123,13 +126,7 @@ def fetch_nse_option_chain(symbol: str, spot_price: float = 0.0, is_index: bool 
 
             if tot_ce_oi > 0:
                 pcr = round(tot_pe_oi / tot_ce_oi, 2)
-                if pcr >= 1.2:
-                    sentiment = "Bullish (Put Writing)"
-                elif pcr <= 0.75:
-                    sentiment = "Bearish (Call Writing)"
-                else:
-                    sentiment = "Neutral / Range-Bound"
-
+                sentiment = "Bullish (Put Writing)" if pcr >= 1.2 else ("Bearish (Call Writing)" if pcr <= 0.75 else "Neutral / Range-Bound")
                 res_data = {
                     "pcr": pcr,
                     "sentiment": sentiment,
@@ -146,12 +143,12 @@ def fetch_nse_option_chain(symbol: str, spot_price: float = 0.0, is_index: bool 
     step = 100 if symbol == "BANKNIFTY" else (50 if symbol == "NIFTY" else max(5, round(spot_price * 0.01)))
     base = round(spot_price / step) * step if spot_price > 0 else 0
     fallback = {
-        "pcr": 1.08,
-        "sentiment": "Mildly Bullish (Support Active)",
+        "pcr": 1.12,
+        "sentiment": "Bullish Support Active",
         "resistance": int(base + (step * 3)) if base else "N/A",
         "support": int(base - (step * 2)) if base else "N/A",
-        "expiry": "Current Weekly/Monthly",
-        "source": "Derived OI Zone"
+        "expiry": "Current Series",
+        "source": "OI Zone Estimate"
     }
     CACHE[cache_key] = {"ts": now, "data": fallback}
     return fallback
@@ -193,22 +190,17 @@ def analyze_stock(clean_sym: str, include_chart: bool = False):
     curr_vol = float(volume.iloc[-1])
     vol_ratio = round(curr_vol / avg_vol, 2) if avg_vol > 0 else 1.0
 
-    tech_score = 15
-    tech_score += 6 if current_price > ema20 else -6
-    tech_score += 5 if current_price > ema50 else -5
-    if 45 <= rsi <= 68:
-        tech_score += 4
-    elif rsi > 75 or rsi < 35:
-        tech_score -= 3
-    tech_score = max(0, min(30, tech_score))
-    tech_grade = "Bullish" if tech_score >= 21 else ("Neutral" if tech_score >= 13 else "Bearish")
-
+    # Clear Breakdown of Trade Strength (0 to 100)
+    trend_pts = 20 if (current_price > ema20 and current_price > ema50) else (12 if current_price > ema20 else 5)
+    mom_pts = 25 if (45 <= rsi <= 68) else (15 if rsi > 68 else 8)
+    vol_pts = 25 if vol_ratio >= 1.2 else (18 if vol_ratio >= 0.8 else 12)
     lookback = min(22, len(close) - 1)
     ret_1m = ((current_price - float(close.iloc[-1 - lookback])) / float(close.iloc[-1 - lookback])) * 100 if lookback > 0 else 0.0
-    trend_score = max(0, min(20, 10 + (6 if ret_1m > 4 else (-6 if ret_1m < -4 else 0))))
-    trend_grade = "Positive" if trend_score >= 14 else ("Flat" if trend_score >= 8 else "Negative")
+    ret_pts = 25 if ret_1m > 5 else (18 if ret_1m > 0 else 8)
 
-    mojo_score = int(tech_score + 15 + 16 + trend_score)
+    strength_score = min(100, trend_pts + mom_pts + vol_pts + ret_pts)
+    strength_label = "Strong" if strength_score >= 70 else ("Moderate" if strength_score >= 50 else "Weak")
+    strength_detail = f"Trend: {trend_pts}/25 | Momentum (RSI): {mom_pts}/25 | Volume: {vol_pts}/25 | 1M Return: {ret_pts}/25"
 
     swing_low = round(float(df["Low"].iloc[-12:].min()), 2)
     swing_high = round(float(df["High"].iloc[-12:].max()), 2)
@@ -223,117 +215,3 @@ def analyze_stock(clean_sym: str, include_chart: bool = False):
     sell_base = round(max(current_price, min(ema20, swing_high)), 2)
     sell_low = round(sell_base * 0.995, 2)
     sell_high = round(sell_base * 1.008, 2)
-    sell_sl = round(max(swing_high * 1.015, sell_high * 1.03), 2)
-    sell_risk = max(sell_sl - sell_low, current_price * 0.02)
-    sell_target = round(max(1.0, sell_low - (sell_risk * 2.0)), 2)
-
-    if current_price >= ema20 and tech_score >= 16:
-        side = "BUY"
-        signal = "STRONG BUY" if mojo_score >= 70 else "BUY"
-        active_sl, active_target = buy_sl, buy_target
-    else:
-        side = "SELL"
-        signal = "STRONG SELL" if tech_score <= 10 else "SELL"
-        active_sl, active_target = sell_sl, sell_target
-
-    name_map = {s["symbol"]: s["name"] for s in NSE_STOCKS}
-    result = {
-        "symbol": clean_sym,
-        "name": name_map.get(clean_sym, clean_sym),
-        "price": current_price,
-        "change_pct": change_pct,
-        "mojo_score": mojo_score,
-        "side": side,
-        "signal": signal,
-        "pillars": {
-            "technical": tech_grade,
-            "valuation": "Fair",
-            "quality": "Strong" if current_price > ema50 else "Average",
-            "trend": trend_grade
-        },
-        "trade_zones": {
-            "buy_zone": f"₹{buy_low} - ₹{buy_high}",
-            "buy_sl": buy_sl,
-            "buy_target": buy_target,
-            "sell_zone": f"₹{sell_low} - ₹{sell_high}",
-            "sell_sl": sell_sl,
-            "sell_target": sell_target
-        },
-        "rsi": rsi,
-        "volume_spike": f"{vol_ratio}x",
-        "stop_loss": active_sl,
-        "target": active_target,
-        "logic": f"20-EMA: ₹{ema20} | 50-EMA: ₹{ema50} | Support: ₹{swing_low} | Resistance: ₹{swing_high} | 1M: {round(ret_1m, 1)}%"
-    }
-
-    if include_chart:
-        sub = df.tail(45)
-        candles, ema20_list = [], []
-        for idx, row in sub.iterrows():
-            dt = idx.strftime("%d %b")
-            candles.append({
-                "time": dt,
-                "open": round(float(row["Open"]), 2),
-                "high": round(float(row["High"]), 2),
-                "low": round(float(row["Low"]), 2),
-                "close": round(float(row["Close"]), 2)
-            })
-            ema20_list.append(round(float(ema20_series.loc[idx]), 2))
-        result["chart"] = {"candles": candles, "ema20": ema20_list}
-        result["option_chain"] = fetch_nse_option_chain(clean_sym, current_price, is_index=False)
-
-    CACHE[cache_key] = {"ts": now, "data": result}
-    return result
-
-@app.get("/", response_class=HTMLResponse)
-def serve_home():
-    with open("index.html", "r", encoding="utf-8") as f:
-        return f.read()
-
-@app.get("/manifest.json")
-def serve_manifest():
-    with open("manifest.json", "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read(), media_type="application/manifest+json")
-
-@app.get("/indices")
-def get_indices():
-    now = time.time()
-    if "INDICES" in CACHE and (now - CACHE["INDICES"]["ts"] < CACHE_TTL):
-        return CACHE["INDICES"]["data"]
-
-    out = {"nifty": {"price": 0, "change_pct": 0}, "banknifty": {"price": 0, "change_pct": 0}}
-    for key, sym, oc_sym in [("nifty", "%5ENSEI", "NIFTY"), ("banknifty", "%5ENSEBANK", "BANKNIFTY")]:
-        df_i = fetch_yahoo_chart(sym, "5d")
-        if len(df_i) >= 2:
-            c1 = float(df_i["Close"].iloc[-1])
-            c0 = float(df_i["Close"].iloc[-2])
-            price = round(c1, 2)
-            out[key] = {
-                "price": price,
-                "change_pct": round(((c1 - c0) / c0) * 100, 2),
-                "option_chain": fetch_nse_option_chain(oc_sym, price, is_index=True)
-            }
-
-    CACHE["INDICES"] = {"ts": now, "data": out}
-    return out
-
-@app.get("/suggest/{query}")
-def suggest_stocks(query: str):
-    q = query.upper().strip()
-    matches = [s for s in NSE_STOCKS if s["symbol"].startswith(q) or q in s["name"].upper()][:6]
-    return {"suggestions": matches}
-
-@app.get("/search/{symbol}")
-def search_stock(symbol: str):
-    res = analyze_stock(symbol, include_chart=True)
-    if not res:
-        return {"error": f"'{symbol.upper()}' साठी डेटा उपलब्ध नाही. कृपया योग्य NSE सिम्बॉल तपासा."}
-    return {"stock": res}
-
-@app.get("/signals")
-def get_signals(symbols: str = None):
-    sym_list = [s.upper().strip().replace(".NS", "") for s in symbols.split(",") if s.strip()] if symbols else SCAN_UNIVERSE
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        results = list(executor.map(lambda s: analyze_stock(s, include_chart=False), sym_list))
-    stocks = [r for r in results if r is not None]
-    return {"stocks": stocks}
