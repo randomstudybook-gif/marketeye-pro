@@ -16,197 +16,51 @@
       --green: #10b981;
       --red: #ef4444;
       --accent: #3b82f6;
+      --gold: #fbbf24;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-    body { background: var(--bg); color: var(--text); padding: 14px; max-width: 1100px; margin: auto; }
+    body { background: var(--bg); color: var(--text); padding: 14px; max-width: 1150px; margin: auto; }
     header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
     h1 { font-size: 1.3rem; color: #38bdf8; }
-    .btn { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .sub-head { font-size: 0.75rem; color: var(--muted); }
+    .btn { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
     .btn:disabled { opacity: 0.6; }
-    .indices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+
+    /* Two Distinct Main Sections Switcher */
+    .mode-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; background: #0f172a; padding: 6px; border-radius: 12px; border: 1px solid var(--border); }
+    .mode-btn { padding: 11px; border-radius: 9px; border: none; background: transparent; color: var(--muted); font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
+    .mode-btn.active-swing { background: #10b981; color: #052e16; }
+    .mode-btn.active-fno { background: #3b82f6; color: #ffffff; }
+
+    .section-banner { background: #0f172a; border-left: 4px solid #10b981; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; font-size: 0.82rem; color: #cbd5e1; line-height: 1.5; }
+    .section-banner.fno-theme { border-left-color: #3b82f6; }
+
+    .indices { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 14px; }
     .idx-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
-    .idx-title { font-size: 0.8rem; color: var(--muted); }
-    .idx-val { font-size: 1.2rem; font-weight: 700; margin-top: 4px; }
+    .idx-title { font-size: 0.82rem; color: var(--muted); display: flex; justify-content: space-between; font-weight: 600; }
+    .idx-val { font-size: 1.25rem; font-weight: 700; margin: 4px 0 8px; }
+    .oc-strip { background: #0f172a; border-radius: 7px; padding: 8px; font-size: 0.78rem; display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; border: 1px solid #1e293b; }
+    .oc-tag { color: #cbd5e1; }
+    .oc-tag strong { color: #38bdf8; }
+
     .search-box { position: relative; margin-bottom: 14px; }
     .search-box input { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.95rem; outline: none; }
-    .suggestions { position: absolute; width: 100%; background: #1e293b; border-radius: 8px; margin-top: 4px; z-index: 20; overflow: hidden; }
+    .suggestions { position: absolute; width: 100%; background: #1e293b; border-radius: 8px; margin-top: 4px; z-index: 30; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
     .sug-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #334155; font-size: 0.9rem; }
     .sug-item:hover { background: #334155; }
+
     .filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
-    .tab { background: var(--card); color: var(--muted); border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; }
+    .tab { background: var(--card); color: var(--muted); border: 1px solid var(--border); padding: 7px 13px; border-radius: 20px; cursor: pointer; font-size: 0.84rem; }
     .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .status { text-align: center; color: #38bdf8; padding: 14px; font-size: 0.95rem; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
-    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .status { text-align: center; color: #38bdf8; padding: 8px; font-size: 0.88rem; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(315px, 1fr)); gap: 12px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; transition: 0.15s; }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+    .sym-row { display: flex; align-items: center; gap: 8px; }
     .sym { font-size: 1.1rem; font-weight: 700; }
+    .star-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; line-height: 1; }
+    .star-btn.saved { color: var(--gold); }
     .cname { font-size: 0.78rem; color: var(--muted); }
-    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
-    .buy { background: rgba(16,185,129,0.18); color: var(--green); }
-    .sell { background: rgba(239,68,68,0.18); color: var(--red); }
-    .price-row { display: flex; justify-content: space-between; align-items: baseline; margin: 8px 0; }
-    .price { font-size: 1.3rem; font-weight: 700; }
-    .pos { color: var(--green); }
-    .neg { color: var(--red); }
-    .mojo { background: #1e293b; padding: 3px 8px; border-radius: 6px; font-size: 0.8rem; color: #fbbf24; font-weight: 600; }
-    .zones { background: #0f172a; border-radius: 8px; padding: 9px; font-size: 0.82rem; margin: 8px 0; line-height: 1.6; }
-    .pillars { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; font-size: 0.75rem; }
-    .pill { background: #1e293b; padding: 3px 7px; border-radius: 5px; color: #cbd5e1; }
-    .logic { font-size: 0.75rem; color: var(--muted); margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px; }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>MarketEye Pro</h1>
-    <button id="refreshBtn" class="btn" onclick="loadDashboard()">Refresh</button>
-  </header>
-
-  <div class="indices">
-    <div class="idx-card">
-      <div class="idx-title">NIFTY 50</div>
-      <div id="niftyVal" class="idx-val">Loading...</div>
-    </div>
-    <div class="idx-card">
-      <div class="idx-title">BANK NIFTY</div>
-      <div id="bnVal" class="idx-val">Loading...</div>
-    </div>
-  </div>
-
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search NSE stock (e.g. RELIANCE, HAL, ZOMATO)..." oninput="onSearchInput(this.value)" />
-    <div id="suggestions" class="suggestions"></div>
-  </div>
-
-  <div class="filters">
-    <button class="tab active" onclick="setFilter('ALL', this)">All Signals</button>
-    <button class="tab" onclick="setFilter('BUY', this)">Buy Zone</button>
-    <button class="tab" onclick="setFilter('SELL', this)">Sell Zone</button>
-  </div>
-
-  <div id="statusMsg" class="status">Loading live NSE market signals...</div>
-  <div id="cardsGrid" class="grid"></div>
-
-  <script>
-    let allStocks = [];
-    let currentFilter = 'ALL';
-
-    function formatIdx(elId, obj) {
-      const el = document.getElementById(elId);
-      if (!obj || !obj.price) {
-        el.innerHTML = '<span style="color:#94a3b8">Market Closed / N/A</span>';
-        return;
-      }
-      const cls = obj.change_pct >= 0 ? 'pos' : 'neg';
-      const sign = obj.change_pct >= 0 ? '+' : '';
-      el.innerHTML = `₹${obj.price.toLocaleString('en-IN')} <span class="${cls}" style="font-size:0.9rem">(${sign}${obj.change_pct}%)</span>`;
-    }
-
-    function renderCards(list) {
-      const grid = document.getElementById('cardsGrid');
-      const status = document.getElementById('statusMsg');
-      const filtered = currentFilter === 'ALL' ? list : list.filter(s => s.side === currentFilter);
-
-      if (!filtered.length) {
-        status.textContent = 'No stocks found for this filter.';
-        grid.innerHTML = '';
-        return;
-      }
-      status.textContent = `Showing ${filtered.length} NSE Stocks`;
-
-      grid.innerHTML = filtered.map(s => {
-        const isBuy = s.side === 'BUY';
-        const chgCls = s.change_pct >= 0 ? 'pos' : 'neg';
-        const sign = s.change_pct >= 0 ? '+' : '';
-        return `
-          <div class="card">
-            <div class="card-top">
-              <div>
-                <div class="sym">${s.symbol}</div>
-                <div class="cname">${s.name}</div>
-              </div>
-              <span class="badge ${isBuy ? 'buy' : 'sell'}">${s.signal}</span>
-            </div>
-            <div class="price-row">
-              <div class="price">₹${s.price} <span class="${chgCls}" style="font-size:0.9rem">(${sign}${s.change_pct}%)</span></div>
-              <div class="mojo">Mojo: ${s.mojo_score}/100</div>
-            </div>
-            <div class="zones">
-              <div><strong style="color:#10b981">Buy Zone:</strong> ${s.trade_zones.buy_zone} | SL: ₹${s.trade_zones.buy_sl} | Tgt: ₹${s.trade_zones.buy_target}</div>
-              <div><strong style="color:#ef4444">Sell Zone:</strong> ${s.trade_zones.sell_zone} | SL: ₹${s.trade_zones.sell_sl} | Tgt: ₹${s.trade_zones.sell_target}</div>
-            </div>
-            <div class="pillars">
-              <span class="pill">Tech: ${s.pillars.technical}</span>
-              <span class="pill">Trend: ${s.pillars.trend}</span>
-              <span class="pill">RSI: ${s.rsi}</span>
-              <span class="pill">Vol: ${s.volume_spike}</span>
-            </div>
-            <div class="logic">${s.logic}</div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function setFilter(type, btn) {
-      currentFilter = type;
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
-      renderCards(allStocks);
-    }
-
-    async function loadDashboard() {
-      const btn = document.getElementById('refreshBtn');
-      const status = document.getElementById('statusMsg');
-      btn.disabled = true;
-      btn.textContent = 'Loading...';
-      status.textContent = 'Fetching NSE data...';
-
-      try {
-        const [idxRes, sigRes] = await Promise.all([
-          fetch('/indices').then(r => r.json()),
-          fetch('/signals').then(r => r.json())
-        ]);
-        formatIdx('niftyVal', idxRes.nifty);
-        formatIdx('bnVal', idxRes.banknifty);
-        allStocks = sigRes.stocks || [];
-        renderCards(allStocks);
-      } catch (err) {
-        status.textContent = 'Server waking up... Please click Refresh once.';
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Refresh';
-      }
-    }
-
-    let searchTimer;
-    function onSearchInput(val) {
-      clearTimeout(searchTimer);
-      const box = document.getElementById('suggestions');
-      if (!val.trim()) {
-        box.innerHTML = '';
-        renderCards(allStocks);
-        return;
-      }
-      searchTimer = setTimeout(async () => {
-        const res = await fetch(`/suggest/${encodeURIComponent(val.trim())}`).then(r => r.json());
-        box.innerHTML = (res.suggestions || []).map(item =>
-          `<div class="sug-item" onclick="selectStock('${item.symbol}')"><strong>${item.symbol}</strong> - ${item.name}</div>`
-        ).join('');
-      }, 250);
-    }
-
-    async function selectStock(sym) {
-      document.getElementById('suggestions').innerHTML = '';
-      document.getElementById('searchInput').value = sym;
-      document.getElementById('statusMsg').textContent = `Analyzing ${sym}...`;
-      const res = await fetch(`/search/${sym}`).then(r => r.json());
-      if (res.stock) {
-        renderCards([res.stock]);
-      } else {
-        document.getElementById('statusMsg').textContent = res.error || 'Stock not found';
-      }
-    }
-
-    loadDashboard();
-  </script>
-</body>
-</html>
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight:
