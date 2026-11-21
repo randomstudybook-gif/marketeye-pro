@@ -20,15 +20,17 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
     body { background: var(--bg); color: var(--text); padding: 14px; max-width: 1150px; margin: auto; }
-    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
     h1 { font-size: 1.3rem; color: #38bdf8; }
-    .sub-head { font-size: 0.75rem; color: var(--muted); }
-    .btn { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+    .sub-head { font-size: 0.74rem; color: var(--muted); }
+    .controls { display: flex; gap: 8px; align-items: center; }
+    select, .btn { background: #1e293b; color: #fff; border: 1px solid #334155; padding: 7px 11px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.84rem; }
+    .btn-primary { background: var(--accent); border-color: var(--accent); }
     .btn:disabled { opacity: 0.6; }
 
-    /* Two Distinct Main Sections Switcher */
-    .mode-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; background: #0f172a; padding: 6px; border-radius: 12px; border: 1px solid var(--border); }
-    .mode-btn { padding: 11px; border-radius: 9px; border: none; background: transparent; color: var(--muted); font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
+    /* Two Distinct Main Sections */
+    .mode-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; background: #0f172a; padding: 6px; border-radius: 12px; border: 1px solid var(--border); }
+    .mode-btn { padding: 11px; border-radius: 9px; border: none; background: transparent; color: var(--muted); font-size: 0.92rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
     .mode-btn.active-swing { background: #10b981; color: #052e16; }
     .mode-btn.active-fno { background: #3b82f6; color: #ffffff; }
 
@@ -52,7 +54,7 @@
     .filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
     .tab { background: var(--card); color: var(--muted); border: 1px solid var(--border); padding: 7px 13px; border-radius: 20px; cursor: pointer; font-size: 0.84rem; }
     .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .status { text-align: center; color: #38bdf8; padding: 8px; font-size: 0.88rem; }
+    .status { text-align: center; color: #38bdf8; padding: 8px; font-size: 0.86rem; }
 
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(315px, 1fr)); gap: 12px; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; transition: 0.15s; }
@@ -79,8 +81,9 @@
     .zones { background: #0f172a; border-radius: 8px; padding: 9px; font-size: 0.82rem; margin: 8px 0; line-height: 1.6; }
     .pillars { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; font-size: 0.75rem; }
     .pill { background: #1e293b; padding: 3px 7px; border-radius: 5px; color: #cbd5e1; }
-    .card-foot { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; display: flex; justify-content: space-between; align-items: center; }
-    .chart-btn { background: #2563eb; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; width: 100%; }
+
+    .card-foot { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+    .chart-btn { background: #2563eb; color: #fff; border: none; padding: 8px 12px; border-radius: 7px; font-size: 0.82rem; font-weight: 600; cursor: pointer; width: 100%; }
 
     /* Modal */
     .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 50; justify-content: center; align-items: center; padding: 12px; }
@@ -98,45 +101,50 @@
   <header>
     <div>
       <h1>MarketEye Pro</h1>
-      <div id="lastUpdated" class="sub-head">NSE Swing Trading & F&O Analytics</div>
+      <div id="lastUpdated" class="sub-head">Auto-Refresh: 5m (Swing) | 60s (F&O)</div>
     </div>
-    <button id="refreshBtn" class="btn" onclick="loadDashboard()">Refresh</button>
+    <div class="controls">
+      <select id="langSelect" onchange="changeLang(this.value)" title="Select Language">
+        <option value="mr">मराठी</option>
+        <option value="hi">हिंदी</option>
+        <option value="en">English</option>
+      </select>
+      <button id="refreshBtn" class="btn btn-primary" onclick="loadDashboard()">Refresh</button>
+    </div>
   </header>
 
   <!-- TWO DISTINCT MAIN SECTIONS -->
   <div class="mode-bar">
-    <button id="btnSwing" class="mode-btn active-swing" onclick="switchMode('SWING')">📈 Swing Trading (Equity)</button>
-    <button id="btnFno" class="mode-btn" onclick="switchMode('FNO')">⚡ F&O Terminal (Options)</button>
+    <button id="btnSwing" class="mode-btn active-swing" onclick="switchMode('SWING')">📈 स्विंग ट्रेडिंग (Equity)</button>
+    <button id="btnFno" class="mode-btn" onclick="switchMode('FNO')">⚡ F&O टर्मिनल (Options)</button>
   </div>
 
-  <div id="sectionBanner" class="section-banner">
-    <strong>📈 Swing Trading विभाग (२ दिवस ते ४ आठवडे होल्डिंग):</strong> येथे शेअर्सचा 20-EMA व 50-EMA ट्रेंड, <strong>Trade Strength (0-100)</strong>, अचूक <strong>Buy/Sell Entry Zone</strong>, Stop Loss आणि Target दिलेले आहेत. चार्ट पाहण्यासाठी कोणत्याही कार्डवरील <strong>View Candlestick Chart</strong> बटणावर क्लिक करा.
-  </div>
+  <div id="sectionBanner" class="section-banner"></div>
 
-  <!-- F&O INDICES & OPTION CHAIN (Shown prominently in F&O Mode) -->
+  <!-- F&O INDICES & OPTION CHAIN -->
   <div id="indicesSection" class="indices" style="display:none;">
     <div class="idx-card">
-      <div class="idx-title"><span>NIFTY 50 (Index Option Chain)</span><span id="niftySent" style="color:#38bdf8"></span></div>
+      <div class="idx-title"><span>NIFTY 50 (Option Chain)</span><span id="niftySent" style="color:#38bdf8"></span></div>
       <div id="niftyVal" class="idx-val">Loading...</div>
       <div id="niftyOC" class="oc-strip">Loading Option Chain...</div>
     </div>
     <div class="idx-card">
-      <div class="idx-title"><span>BANK NIFTY (Index Option Chain)</span><span id="bnSent" style="color:#38bdf8"></span></div>
+      <div class="idx-title"><span>BANK NIFTY (Option Chain)</span><span id="bnSent" style="color:#38bdf8"></span></div>
       <div id="bnVal" class="idx-val">Loading...</div>
       <div id="bnOC" class="oc-strip">Loading Option Chain...</div>
     </div>
   </div>
 
   <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search any NSE stock to open Candlestick Chart & Option Chain (e.g. RELIANCE, HAL, ZOMATO)..." oninput="onSearchInput(this.value)" />
+    <input type="text" id="searchInput" placeholder="Search NSE stock for Candlestick Chart & Option Chain (e.g. RELIANCE, HAL, ZOMATO)..." oninput="onSearchInput(this.value)" />
     <div id="suggestions" class="suggestions"></div>
   </div>
 
   <div class="filters">
-    <button class="tab active" onclick="setFilter('ALL', this)">All Stocks</button>
-    <button class="tab" onclick="setFilter('WATCHLIST', this)">★ My Watchlist (<span id="wlCount">0</span>)</button>
-    <button class="tab" onclick="setFilter('BUY', this)">Bullish / Buy</button>
-    <button class="tab" onclick="setFilter('SELL', this)">Bearish / Sell</button>
+    <button class="tab active" onclick="setFilter('ALL', this)" id="tabAll">All Stocks</button>
+    <button class="tab" onclick="setFilter('WATCHLIST', this)">★ Watchlist (<span id="wlCount">0</span>)</button>
+    <button class="tab" onclick="setFilter('BUY', this)" id="tabBuy">Buy Zone</button>
+    <button class="tab" onclick="setFilter('SELL', this)" id="tabSell">Sell Zone</button>
   </div>
 
   <div id="statusMsg" class="status">Loading live NSE data...</div>
@@ -150,12 +158,12 @@
           <h2 id="mTitle" style="font-size:1.15rem;color:#38bdf8">Stock</h2>
           <div id="mSub" style="font-size:0.78rem;color:#94a3b8"></div>
         </div>
-        <button class="close-btn" onclick="closeModal()">✕ Close</button>
+        <button class="close-btn" onclick="closeModal()">✕</button>
       </div>
       <div id="mOC" class="oc-strip" style="margin-bottom:8px"></div>
       <div class="legend">
-        <span><strong style="color:#10b981">▮</strong> Bullish Candle</span>
-        <span><strong style="color:#ef4444">▮</strong> Bearish Candle</span>
+        <span><strong style="color:#10b981">▮</strong> Bullish</span>
+        <span><strong style="color:#ef4444">▮</strong> Bearish</span>
         <span><strong style="color:#38bdf8">—</strong> 20-EMA</span>
         <span><strong style="color:#fbbf24">--</strong> Target</span>
         <span><strong style="color:#f87171">--</strong> Stop Loss</span>
@@ -164,7 +172,7 @@
       <div id="mZones" class="zones"></div>
       <div class="calc-box">
         <div>
-          <strong>Position Size Calculator:</strong> Capital ₹
+          <strong id="calcLabel">Position Size Calculator:</strong> ₹
           <input type="number" id="capInput" value="25000" oninput="updateCalc()" />
         </div>
         <div id="calcResult" style="margin-top:6px;color:#10b981"></div>
@@ -173,11 +181,76 @@
   </div>
 
   <script>
+    const I18N = {
+      mr: {
+        swingBtn: "📈 स्विंग ट्रेडिंग (Equity)",
+        fnoBtn: "⚡ F&O टर्मिनल (Options)",
+        swingBanner: "<strong>📈 Swing Trading विभाग (२ दिवस ते ४ आठवडे होल्डिंग):</strong> येथे शेअर्सचा 20-EMA ट्रेंड, <strong>Trade Strength (0-100)</strong>, अचूक Entry Zone, Stop Loss आणि Target दिलेले आहेत. चार्ट पाहण्यासाठी कोणत्याही कार्डवर क्लिक करा.",
+        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> वर <strong>Nifty / Bank Nifty Option Chain (PCR, Support, Resistance)</strong> आणि खाली F&O शेअर्ससाठी सुचवलेले <strong>Call/Put Strike (CE/PE)</strong> दिले आहेत. (Auto-Refresh: दर ६० सेकंदांनी)",
+        chartBtn: "📊 कँडलस्टिक चार्ट आणि विश्लेषण पहा",
+        allTab: "सर्व शेअर्स",
+        buyTab: "Buy झोन",
+        sellTab: "Sell झोन",
+        calcLabel: "भांडवलानुसार क्वांटिटी मोजा:"
+      },
+      hi: {
+        swingBtn: "📈 स्विंग ट्रेडिंग (Equity)",
+        fnoBtn: "⚡ F&O टर्मिनल (Options)",
+        swingBanner: "<strong>📈 Swing Trading विभाग (2 दिन से 4 सप्ताह होल्डिंग):</strong> यहाँ शेयरों का 20-EMA ट्रेंड, <strong>Trade Strength (0-100)</strong>, सटीक Entry Zone, Stop Loss और Target दिए गए हैं। चार्ट देखने के लिए किसी भी कार्ड पर क्लिक करें।",
+        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> ऊपर <strong>Nifty / Bank Nifty Option Chain (PCR, Support, Resistance)</strong> और नीचे F&O शेयरों के लिए सुझाए गए <strong>Call/Put Strike (CE/PE)</strong> दिए गए हैं। (Auto-Refresh: हर 60 सेकंड में)",
+        chartBtn: "📊 कैंडलस्टिक चार्ट और विश्लेषण देखें",
+        allTab: "सभी शेयर",
+        buyTab: "Buy ज़ोन",
+        sellTab: "Sell ज़ोन",
+        calcLabel: "पूंजी के अनुसार क्वांटिटी गणना:"
+      },
+      en: {
+        swingBtn: "📈 Swing Trading (Equity)",
+        fnoBtn: "⚡ F&O Terminal (Options)",
+        swingBanner: "<strong>📈 Swing Trading Section (2 Days to 4 Weeks):</strong> Displays 20-EMA trend, <strong>Trade Strength (0-100)</strong>, Entry Zone, Stop Loss & Target. Click any card to view its Candlestick Chart.",
+        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> Live <strong>Nifty & Bank Nifty Option Chain (PCR, Support, Resistance)</strong> and suggested <strong>Call/Put Strikes (CE/PE)</strong>. (Auto-Refresh: Every 60s)",
+        chartBtn: "📊 View Candlestick Chart & Analysis",
+        allTab: "All Stocks",
+        buyTab: "Buy Zone",
+        sellTab: "Sell Zone",
+        calcLabel: "Position Size Calculator:"
+      }
+    };
+
     let allStocks = [];
-    let currentMode = 'SWING'; // 'SWING' or 'FNO'
+    let currentMode = 'SWING';
     let currentFilter = 'ALL';
+    let currentLang = localStorage.getItem('marketeye_lang') || 'mr';
     let watchlist = JSON.parse(localStorage.getItem('marketeye_wl') || '["RELIANCE","TCS","HAL","BHARTIARTL"]');
     let activeStock = null;
+    let refreshTimer = null;
+
+    document.getElementById('langSelect').value = currentLang;
+
+    function changeLang(lang) {
+      currentLang = lang;
+      localStorage.setItem('marketeye_lang', lang);
+      applyTranslations();
+      renderCards(allStocks);
+    }
+
+    function applyTranslations() {
+      const t = I18N[currentLang];
+      document.getElementById('btnSwing').innerHTML = t.swingBtn;
+      document.getElementById('btnFno').innerHTML = t.fnoBtn;
+      document.getElementById('tabAll').textContent = t.allTab;
+      document.getElementById('tabBuy').textContent = t.buyTab;
+      document.getElementById('tabSell').textContent = t.sellTab;
+      document.getElementById('calcLabel').textContent = t.calcLabel;
+      const banner = document.getElementById('sectionBanner');
+      banner.innerHTML = currentMode === 'SWING' ? t.swingBanner : t.fnoBanner;
+    }
+
+    function setupAutoRefresh() {
+      if (refreshTimer) clearInterval(refreshTimer);
+      const intervalMs = currentMode === 'FNO' ? 60000 : 300000;
+      refreshTimer = setInterval(() => loadDashboard(true), intervalMs);
+    }
 
     function switchMode(mode) {
       currentMode = mode;
@@ -191,14 +264,14 @@
         btnFno.className = 'mode-btn';
         idxSec.style.display = 'none';
         banner.className = 'section-banner';
-        banner.innerHTML = '<strong>📈 Swing Trading विभाग (२ दिवस ते ४ आठवडे होल्डिंग):</strong> येथे शेअर्सचा 20-EMA व 50-EMA ट्रेंड, <strong>Trade Strength (0-100)</strong>, अचूक <strong>Buy/Sell Entry Zone</strong>, Stop Loss आणि Target दिलेले आहेत. चार्ट पाहण्यासाठी कोणत्याही कार्डवरील <strong>📊 View Candlestick Chart</strong> बटणावर क्लिक करा.';
       } else {
         btnSwing.className = 'mode-btn';
         btnFno.className = 'mode-btn active-fno';
         idxSec.style.display = 'grid';
         banner.className = 'section-banner fno-theme';
-        banner.innerHTML = '<strong>⚡ F&O Terminal (Options & Derivatives):</strong> वर <strong>Nifty / Bank Nifty Option Chain (PCR, Support, Resistance)</strong> आणि खाली फक्त F&O मधील शेअर्ससाठी सुचवलेले <strong>Call/Put Strike (CE/PE)</strong> आणि Option Chain विश्लेषणाचा डेटा दाखवला आहे.';
       }
+      applyTranslations();
+      setupAutoRefresh();
       renderCards(allStocks);
     }
 
@@ -238,6 +311,7 @@
     function renderCards(list) {
       const grid = document.getElementById('cardsGrid');
       const status = document.getElementById('statusMsg');
+      const t = I18N[currentLang];
 
       let filtered = currentMode === 'FNO' ? list.filter(s => s.is_fno) : list;
       if (currentFilter === 'BUY') filtered = filtered.filter(s => s.side === 'BUY');
@@ -245,21 +319,18 @@
       if (currentFilter === 'WATCHLIST') filtered = filtered.filter(s => watchlist.includes(s.symbol));
 
       if (!filtered.length) {
-        status.textContent = currentFilter === 'WATCHLIST'
-          ? 'Your Watchlist is empty. Click ★ on any stock card to save it here.'
-          : 'No stocks found for this filter.';
+        status.textContent = 'No stocks found for this filter.';
         grid.innerHTML = '';
         return;
       }
-      status.textContent = currentMode === 'SWING'
-        ? `Swing Trading: Showing ${filtered.length} NSE Stocks`
-        : `F&O Terminal: Showing ${filtered.length} Derivatives Stocks`;
+      status.textContent = `Showing ${filtered.length} NSE Stocks`;
 
       grid.innerHTML = filtered.map(s => {
         const isBuy = s.side === 'BUY';
         const chgCls = s.change_pct >= 0 ? 'pos' : 'neg';
         const sign = s.change_pct >= 0 ? '+' : '';
         const isSaved = watchlist.includes(s.symbol);
+        const noteText = (s.notes && s.notes[currentLang]) ? s.notes[currentLang] : '';
 
         const bodyHtml = currentMode === 'SWING' ? `
           <div class="strength-box">
@@ -268,7 +339,7 @@
             </div>
             <div class="strength-sub">${s.strength_detail}</div>
           </div>
-          <div class="ai-note">${s.swing_note}</div>
+          <div class="ai-note">${noteText}</div>
           <div class="zones">
             <div><strong style="color:#10b981">Buy Zone:</strong> ${s.trade_zones.buy_zone} | SL: ₹${s.trade_zones.buy_sl} | Tgt: ₹${s.trade_zones.buy_target}</div>
             <div><strong style="color:#ef4444">Sell Zone:</strong> ${s.trade_zones.sell_zone} | SL: ₹${s.trade_zones.sell_sl} | Tgt: ₹${s.trade_zones.sell_target}</div>
@@ -285,17 +356,13 @@
               <span style="color:#38bdf8">${s.fno_strike}</span>
               <span>${s.fno_bias}</span>
             </div>
-            <div class="strength-sub">Option Chain Support: ₹${s.support} | Resistance: ₹${s.resistance}</div>
+            <div class="strength-sub">Support: ₹${s.support} | Resistance: ₹${s.resistance}</div>
           </div>
+          <div class="ai-note">${noteText}</div>
           <div class="zones">
             <div><strong style="color:#10b981">Spot Support (Put Zone):</strong> ₹${s.support}</div>
             <div><strong style="color:#ef4444">Spot Resistance (Call Zone):</strong> ₹${s.resistance}</div>
-            <div><strong style="color:#fbbf24">Active Stop Loss:</strong> ₹${s.stop_loss} | <strong>Target:</strong> ₹${s.target}</div>
-          </div>
-          <div class="pillars">
-            <span class="pill">RSI: ${s.rsi}</span>
-            <span class="pill">Vol Spike: ${s.volume_spike}</span>
-            <span class="pill">Strength: ${s.strength_score}/100</span>
+            <div><strong style="color:#fbbf24">Stop Loss:</strong> ₹${s.stop_loss} | <strong>Target:</strong> ₹${s.target}</div>
           </div>
         `;
 
@@ -316,7 +383,7 @@
             </div>
             ${bodyHtml}
             <div class="card-foot">
-              <button class="chart-btn" onclick="event.stopPropagation(); openStockModal('${s.symbol}')">📊 View Candlestick Chart & Option Chain</button>
+              <button class="chart-btn" onclick="event.stopPropagation(); openStockModal('${s.symbol}')">${t.chartBtn}</button>
             </div>
           </div>
         `;
@@ -330,12 +397,14 @@
       renderCards(allStocks);
     }
 
-    async function loadDashboard() {
+    async function loadDashboard(silent = false) {
       const btn = document.getElementById('refreshBtn');
       const status = document.getElementById('statusMsg');
-      btn.disabled = true;
-      btn.textContent = 'Loading...';
-      status.textContent = 'Fetching live NSE prices & Option Chain...';
+      if (!silent) {
+        btn.disabled = true;
+        btn.textContent = 'Loading...';
+        status.textContent = 'Fetching live NSE data...';
+      }
       updateWlCount();
 
       const mergedSyms = Array.from(new Set([...watchlist, "BHARTIARTL", "RELIANCE", "TCS", "HDFCBANK", "INFY", "SBIN", "TATAMOTORS", "TATASTEEL", "ZOMATO", "IRCTC", "HAL", "BEL", "ITC", "AXISBANK", "WIPRO", "IDEA", "YESBANK", "SUZLON"]));
@@ -349,9 +418,10 @@
         formatIdx('bnVal', 'bnOC', 'bnSent', idxRes.banknifty);
         allStocks = sigRes.stocks || [];
         renderCards(allStocks);
-        document.getElementById('lastUpdated').textContent = 'Last Updated: ' + new Date().toLocaleTimeString('en-IN');
+        const modeTxt = currentMode === 'FNO' ? '60s Auto' : '5m Auto';
+        document.getElementById('lastUpdated').textContent = `Updated: ${new Date().toLocaleTimeString('en-IN')} (${modeTxt})`;
       } catch (err) {
-        status.textContent = 'Server waking up... Please click Refresh once.';
+        if (!silent) status.textContent = 'Server waking up... Please click Refresh once.';
       } finally {
         btn.disabled = false;
         btn.textContent = 'Refresh';
@@ -382,7 +452,6 @@
       modal.classList.add('open');
       document.getElementById('mTitle').textContent = `${sym} — Loading Candlestick Chart...`;
       document.getElementById('mSub').textContent = '';
-      document.getElementById('mOC').textContent = 'Fetching Option Chain & 45-Day Candles...';
 
       const res = await fetch(`/search/${sym}`).then(r => r.json());
       if (!res.stock) {
@@ -392,7 +461,7 @@
       const s = res.stock;
       activeStock = s;
       document.getElementById('mTitle').textContent = `${s.symbol} — ₹${s.price} (${s.signal})`;
-      document.getElementById('mSub').textContent = `${s.name} | Trade Strength: ${s.strength_score}/100 (${s.strength_label})`;
+      document.getElementById('mSub').textContent = `${s.name} | Trade Strength: ${s.strength_score}/100`;
 
       const oc = s.option_chain || {};
       document.getElementById('mOC').innerHTML = `
@@ -407,12 +476,8 @@
         <div><strong style="color:#ef4444">Sell Zone:</strong> ${s.trade_zones.sell_zone} | <strong>SL:</strong> ₹${s.trade_zones.sell_sl} | <strong>Target:</strong> ₹${s.trade_zones.sell_target}</div>
       `;
 
-      drawCandlestickChart(s);
       updateCalc();
-    }
-
-    function closeModal() {
-      document.getElementById('stockModal').classList.remove('open');
+      drawCandlestickChart(s);
     }
 
     function updateCalc() {
@@ -423,7 +488,11 @@
       const rewardPerShare = Math.abs(activeStock.target - activeStock.price);
       const rr = riskPerShare > 0 ? (rewardPerShare / riskPerShare).toFixed(2) : '2.0';
       document.getElementById('calcResult').textContent =
-        `Buy Qty: ${qty} shares | Max Risk: ₹${Math.round(qty * riskPerShare)} | Est. Profit at Target: ₹${Math.round(qty * rewardPerShare)} (R:R 1:${rr})`;
+        `Qty: ${qty} shares | Max Risk: ₹${Math.round(qty * riskPerShare)} | Target Profit: ₹${Math.round(qty * rewardPerShare)} (R:R 1:${rr})`;
+    }
+
+    function closeModal() {
+      document.getElementById('stockModal').classList.remove('open');
     }
 
     function drawCandlestickChart(s) {
@@ -492,6 +561,8 @@
       ctx.stroke();
     }
 
+    applyTranslations();
+    setupAutoRefresh();
     loadDashboard();
   </script>
 </body>
