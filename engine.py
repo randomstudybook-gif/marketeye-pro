@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 import requests
 import pandas as pd
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 app = FastAPI()
 
@@ -248,11 +249,10 @@ def search_stock(symbol: str):
     return {"stock": res}
 
 @app.get("/signals")
+@app.get("/signals")
 def get_signals(symbols: str = None):
     sym_list = [s.upper().strip().replace(".NS", "") for s in symbols.split(",") if s.strip()] if symbols else SCAN_UNIVERSE
-    stocks = []
-    for sym in sym_list:
-        res = analyze_stock(sym, include_chart=False)
-        if res:
-            stocks.append(res)
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        results = list(executor.map(lambda s: analyze_stock(s, include_chart=False), sym_list))
+    stocks = [r for r in results if r is not None]
     return {"stocks": stocks}
