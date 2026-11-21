@@ -215,3 +215,130 @@ def analyze_stock(clean_sym: str, include_chart: bool = False):
     sell_base = round(max(current_price, min(ema20, swing_high)), 2)
     sell_low = round(sell_base * 0.995, 2)
     sell_high = round(sell_base * 1.008, 2)
+    sell_sl = round(max(swing_high * 1.015, sell_high * 1.03), 2)
+    sell_risk = max(sell_sl - sell_low, current_price * 0.02)
+    sell_target = round(max(1.0, sell_low - (sell_risk * 2.0)), 2)
+
+    step = max(5, round(current_price * 0.01))
+    atm_strike = int(round(current_price / step) * step)
+    is_fno = clean_sym in FNO_STOCKS
+
+    if current_price >= ema20:
+        side = "BUY"
+        signal = "STRONG BUY" if strength_score >= 70 else "BUY"
+        active_sl, active_target = buy_sl, buy_target
+        swing_note = f"20-EMA (₹{ema20}) च्या वर तेजीत; ₹{buy_high} जवळ सपोर्ट मिळाल्यास ₹{buy_target} पर्यंत स्विंग संधी."
+        fno_strike = f"{atm_strike} CE (Call Buy)"
+        fno_bias = "Bullish (Call Side)"
+    else:
+        side = "SELL"
+        signal = "STRONG SELL" if strength_score <= 45 else "SELL"
+        active_sl, active_target = sell_sl, sell_target
+        swing_note = f"20-EMA (₹{ema20}) च्या खाली दबाव; ₹{sell_low} खाली राहिल्यास ₹{sell_target} पर्यंत घसरण शक्य."
+        fno_strike = f"{atm_strike} PE (Put Buy)"
+        fno_bias = "Bearish (Put Side)"
+
+    name_map = {s["symbol"]: s["name"] for s in NSE_STOCKS}
+    result = {
+        "symbol": clean_sym,
+        "name": name_map.get(clean_sym, clean_sym),
+        "is_fno": is_fno,
+        "price": current_price,
+        "change_pct": change_pct,
+        "strength_score": strength_score,
+        "strength_label": strength_label,
+        "strength_detail": strength_detail,
+        "side": side,
+        "signal": signal,
+        "swing_note": swing_note,
+        "fno_strike": fno_strike,
+        "fno_bias": fno_bias,
+        "trade_zones": {
+            "buy_zone": f"₹{buy_low} - ₹{buy_high}",
+            "buy_sl": buy_sl,
+            "buy_target": buy_target,
+            "sell_zone": f"₹{sell_low} - ₹{sell_high}",
+            "sell_sl": sell_sl,
+            "sell_target": sell_target
+        },
+        "rsi": rsi,
+        "volume_spike": f"{vol_ratio}x",
+        "stop_loss": active_sl,
+        "target": active_target,
+        "ema20": ema20,
+        "ema50": ema50,
+        "support": swing_low,
+        "resistance": swing_high
+    }
+
+    if include_chart:
+        sub = df.tail(45)
+        candles, ema20_list = [], []
+        for idx, row in sub.iterrows():
+            dt = idx.strftime("%d %b")
+            candles.append({
+                "time": dt,
+                "open": round(float(row["Open"]), 2),
+                "high": round(float(row["High"]), 2),
+                "low": round(float(row["Low"]), 2),
+                "close": round(float(row["Close"]), 2)
+            })
+            ema20_list.append(round(float(ema20_series.loc[idx]), 2))
+        result["chart"] = {"candles": candles, "ema20": ema20_list}
+        result["option_chain"] = fetch_nse_option_chain(clean_sym, current_price, is_index=False)
+
+    CACHE[cache_key] = {"ts": now, "data": result}
+    return result
+
+@app.get("/", response_class=HTMLResponse)
+def serve_home():
+    with open("index.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+@app.get("/manifest.json")
+def serve_manifest():
+    with open("manifest.json", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read(), media_type="application/manifest+json")
+
+@app.get("/indices")
+def get_indices():
+    now = time.time()
+    if "INDICES" in CACHE and (now - CACHE["INDICES"]["ts"] < CACHE_TTL):
+        return CACHE["INDICES"]["data"]
+
+    out = {"nifty": {"price": 0, "change_pct": 0}, "banknifty": {"price": 0, "change_pct": 0}}
+    for key, sym, oc_sym in [("nifty", "%5ENSEI", "NIFTY"), ("banknifty", "%5ENSEBANK", "BANKNIFTY")]:
+        df_i = fetch_yahoo_chart(sym, "5d")
+        if len(df_i) >= 2:
+            c1 = float(df_i["Close"].iloc[-1])
+            c0 = float(df_i["Close"].iloc[-2])
+            price = round(c1, 2)
+            out[key] = {
+                "price": price,
+                "change_pct": round(((c1 - c0) / c0) * 100, 2),
+                "option_chain": fetch_nse_option_chain(oc_sym, price, is_index=True)
+            }
+
+    CACHE["INDICES"] = {"ts": now, "data": out}
+    return out
+
+@app.get("/suggest/{query}")
+def suggest_stocks(query: str):
+    q = query.upper().strip()
+    matches = [s for s in NSE_STOCKS if s["symbol"].startswith(q) or q in s["name"].upper()][:6]
+    return {"suggestions": matches}
+
+@app.get("/search/{symbol}")
+def search_stock(symbol: str):
+    res = analyze_stock(symbol, include_chart=True)
+    if not res:
+        return {"error": f"'{symbol.upper()}' साठी डेटा उपलब्ध नाही. कृपया योग्य NSE सिम्बॉल तपासा."}
+    return {"stock": res}
+
+@app.get("/signals")
+def get_signals(symbols: str = None):
+    sym_list = [s.upper().strip().replace(".NS", "") for s in symbols.split(",") if s.strip()] if symbols else SCAN_UNIVERSE
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        results = list(executor.map(lambda s: analyze_stock(s, include_chart=False), sym_list))
+    stocks = [r for r in results if r is not None]
+    return {"stocks": stocks}
