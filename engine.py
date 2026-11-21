@@ -1,10 +1,15 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-import yfinance as yf
+import requests
 import pandas as pd
 import time
 
 app = FastAPI()
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "application/json"
+}
 
 SCAN_UNIVERSE = [
     "BHARTIARTL", "RELIANCE", "TCS", "HDFCBANK", "INFY", "SBIN",
@@ -51,6 +56,28 @@ NSE_STOCKS = [
 CACHE = {}
 CACHE_TTL = 300
 
+def fetch_yahoo_chart(yahoo_symbol: str, range_str: str = "6mo") -> pd.DataFrame:
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{yahoo_symbol}?range={range_str}&interval=1d"
+    try:
+        resp = requests.get(url, headers=HEADERS, timeout=8)
+        if resp.status_code != 200:
+            url2 = f"https://query2.finance.yahoo.com/v8/finance/chart/{yahoo_symbol}?range={range_str}&interval=1d"
+            resp = requests.get(url2, headers=HEADERS, timeout=8)
+        data = resp.json()
+        res = data["chart"]["result"][0]
+        timestamps = res["timestamp"]
+        quote = res["indicators"]["quote"][0]
+        df = pd.DataFrame({
+            "Open": quote["open"],
+            "High": quote["high"],
+            "Low": quote["low"],
+            "Close": quote["close"],
+            "Volume": quote["volume"]
+        }, index=pd.to_datetime(timestamps, unit="s"))
+        return df.dropna(subset=["Close"])
+    except Exception:
+        return pd.DataFrame()
+
 def calculate_rsi(series, period=14):
     delta = series.diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
@@ -58,11 +85,15 @@ def calculate_rsi(series, period=14):
     rs = gain / loss.replace(0, 1e-9)
     return 100 - (100 / (1 + rs))
 
-def analyze_dataframe(clean_sym: str, df: pd.DataFrame, include_chart: bool = False):
-    if df is None or df.empty or len(df) < 15:
-        return None
-    df = df.dropna(subset=["Close"])
-    if len(df) < 15:
+def analyze_stock(clean_sym: str, include_chart: bool = False):
+    clean_sym = clean_sym.upper().strip().replace(".NS", "")
+    cache_key = f"{clean_sym}_{include_chart}"
+    now = time.time()
+    if cache_key in CACHE and (now - CACHE[cache_key]["ts"] < CACHE_TTL):
+        return CACHE[cache_key]["data"]
+
+    df = fetch_yahoo_chart(f"{clean_sym}.NS", "6mo")
+    if df.empty or len(df) < 15:
         return None
 
     close = df["Close"]
@@ -94,18 +125,12 @@ def analyze_dataframe(clean_sym: str, df: pd.DataFrame, include_chart: bool = Fa
     tech_score = max(0, min(30, tech_score))
     tech_grade = "Bullish" if tech_score >= 21 else ("Neutral" if tech_score >= 13 else "Bearish")
 
-    val_score = 15
-    val_grade = "Fair"
-    qual_score = 16
-    qual_grade = "Strong" if current_price > ema50 else "Average"
-
     lookback = min(22, len(close) - 1)
     ret_1m = ((current_price - float(close.iloc[-1 - lookback])) / float(close.iloc[-1 - lookback])) * 100 if lookback > 0 else 0.0
-    trend_score = 10 + (6 if ret_1m > 4 else (-6 if ret_1m < -4 else 0))
-    trend_score = max(0, min(20, trend_score))
+    trend_score = max(0, min(20, 10 + (6 if ret_1m > 4 else (-6 if ret_1m < -4 else 0))))
     trend_grade = "Positive" if trend_score >= 14 else ("Flat" if trend_score >= 8 else "Negative")
 
-    mojo_score = int(tech_score + val_score + qual_score + trend_score)
+    mojo_score = int(tech_score + 15 + 16 + trend_score)
 
     swing_low = round(float(df["Low"].iloc[-12:].min()), 2)
     swing_high = round(float(df["High"].iloc[-12:].max()), 2)
@@ -127,17 +152,13 @@ def analyze_dataframe(clean_sym: str, df: pd.DataFrame, include_chart: bool = Fa
     if current_price >= ema20 and tech_score >= 16:
         side = "BUY"
         signal = "STRONG BUY" if mojo_score >= 70 else "BUY"
-        active_sl = buy_sl
-        active_target = buy_target
+        active_sl, active_target = buy_sl, buy_target
     else:
         side = "SELL"
         signal = "STRONG SELL" if tech_score <= 10 else "SELL"
-        active_sl = sell_sl
-        active_target = sell_target
+        active_sl, active_target = sell_sl, sell_target
 
     name_map = {s["symbol"]: s["name"] for s in NSE_STOCKS}
-    logic = f"20-EMA: ₹{ema20} | 50-EMA: ₹{ema50} | Support: ₹{swing_low} | Resistance: ₹{swing_high} | 1M: {round(ret_1m, 1)}%"
-
     result = {
         "symbol": clean_sym,
         "name": name_map.get(clean_sym, clean_sym),
@@ -148,8 +169,8 @@ def analyze_dataframe(clean_sym: str, df: pd.DataFrame, include_chart: bool = Fa
         "signal": signal,
         "pillars": {
             "technical": tech_grade,
-            "valuation": val_grade,
-            "quality": qual_grade,
+            "valuation": "Fair",
+            "quality": "Strong" if current_price > ema50 else "Average",
             "trend": trend_grade
         },
         "trade_zones": {
@@ -164,7 +185,7 @@ def analyze_dataframe(clean_sym: str, df: pd.DataFrame, include_chart: bool = Fa
         "volume_spike": f"{vol_ratio}x",
         "stop_loss": active_sl,
         "target": active_target,
-        "logic": logic
+        "logic": f"20-EMA: ₹{ema20} | 50-EMA: ₹{ema50} | Support: ₹{swing_low} | Resistance: ₹{swing_high} | 1M: {round(ret_1m, 1)}%"
     }
 
     if include_chart:
@@ -183,6 +204,7 @@ def analyze_dataframe(clean_sym: str, df: pd.DataFrame, include_chart: bool = Fa
             volumes.append({"time": dt, "value": int(row["Volume"])})
         result["chart"] = {"candles": candles, "ema20": ema20_list, "volumes": volumes}
 
+    CACHE[cache_key] = {"ts": now, "data": result}
     return result
 
 @app.get("/", response_class=HTMLResponse)
@@ -202,17 +224,12 @@ def get_indices():
         return CACHE["INDICES"]["data"]
 
     out = {"nifty": {"price": 0, "change_pct": 0}, "banknifty": {"price": 0, "change_pct": 0}}
-    try:
-        data = yf.download(["^NSEI", "^NSEBANK"], period="5d", interval="1d", group_by="ticker", progress=False)
-        for key, sym in [("nifty", "^NSEI"), ("banknifty", "^NSEBANK")]:
-            if sym in data.columns.get_level_values(0):
-                df_i = data[sym].dropna(subset=["Close"])
-                if len(df_i) >= 2:
-                    c1 = float(df_i["Close"].iloc[-1])
-                    c0 = float(df_i["Close"].iloc[-2])
-                    out[key] = {"price": round(c1, 2), "change_pct": round(((c1 - c0) / c0) * 100, 2)}
-    except Exception:
-        pass
+    for key, sym in [("nifty", "%5ENSEI"), ("banknifty", "%5ENSEBANK")]:
+        df_i = fetch_yahoo_chart(sym, "5d")
+        if len(df_i) >= 2:
+            c1 = float(df_i["Close"].iloc[-1])
+            c0 = float(df_i["Close"].iloc[-2])
+            out[key] = {"price": round(c1, 2), "change_pct": round(((c1 - c0) / c0) * 100, 2)}
 
     CACHE["INDICES"] = {"ts": now, "data": out}
     return out
@@ -225,49 +242,17 @@ def suggest_stocks(query: str):
 
 @app.get("/search/{symbol}")
 def search_stock(symbol: str):
-    clean_sym = symbol.upper().strip().replace(".NS", "")
-    cache_key = f"SINGLE_{clean_sym}"
-    now = time.time()
-    if cache_key in CACHE and (now - CACHE[cache_key]["ts"] < CACHE_TTL):
-        return {"stock": CACHE[cache_key]["data"]}
-
-    try:
-        df = yf.download(f"{clean_sym}.NS", period="6mo", interval="1d", progress=False)
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-        res = analyze_dataframe(clean_sym, df, include_chart=True)
-        if res:
-            CACHE[cache_key] = {"ts": now, "data": res}
-            return {"stock": res}
-    except Exception:
-        pass
-    return {"error": f"'{clean_sym}' साठी डेटा उपलब्ध नाही. कृपया योग्य NSE सिम्बॉल तपासा."}
+    res = analyze_stock(symbol, include_chart=True)
+    if not res:
+        return {"error": f"'{symbol.upper()}' साठी डेटा उपलब्ध नाही. कृपया योग्य NSE सिम्बॉल तपासा."}
+    return {"stock": res}
 
 @app.get("/signals")
 def get_signals(symbols: str = None):
     sym_list = [s.upper().strip().replace(".NS", "") for s in symbols.split(",") if s.strip()] if symbols else SCAN_UNIVERSE
-    cache_key = "BATCH_" + "_".join(sym_list)
-    now = time.time()
-    if cache_key in CACHE and (now - CACHE[cache_key]["ts"] < CACHE_TTL):
-        return {"stocks": CACHE[cache_key]["data"]}
-
-    tickers = [f"{s}.NS" for s in sym_list]
     stocks = []
-    try:
-        raw = yf.download(tickers, period="4mo", interval="1d", group_by="ticker", progress=False, threads=True)
-        for s in sym_list:
-            t = f"{s}.NS"
-            df_s = None
-            if isinstance(raw.columns, pd.MultiIndex) and t in raw.columns.get_level_values(0):
-                df_s = raw[t]
-            elif len(sym_list) == 1:
-                df_s = raw
-            res = analyze_dataframe(s, df_s, include_chart=False)
-            if res:
-                stocks.append(res)
-    except Exception:
-        pass
-
-    if stocks:
-        CACHE[cache_key] = {"ts": now, "data": stocks}
+    for sym in sym_list:
+        res = analyze_stock(sym, include_chart=False)
+        if res:
+            stocks.append(res)
     return {"stocks": stocks}
