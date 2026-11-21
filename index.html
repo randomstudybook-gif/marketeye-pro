@@ -21,8 +21,12 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
     body { background: var(--bg); color: var(--text); padding: 14px; max-width: 1150px; margin: auto; }
     header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .title-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     h1 { font-size: 1.3rem; color: #38bdf8; }
-    .sub-head { font-size: 0.74rem; color: var(--muted); }
+    .mkt-badge { font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; }
+    .mkt-open { background: rgba(16,185,129,0.18); color: #10b981; border: 1px solid rgba(16,185,129,0.4); }
+    .mkt-closed { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.35); }
+    .sub-head { font-size: 0.74rem; color: var(--muted); margin-top: 3px; }
     .controls { display: flex; gap: 8px; align-items: center; }
     select, .btn { background: #1e293b; color: #fff; border: 1px solid #334155; padding: 7px 11px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.84rem; }
     .btn-primary { background: var(--accent); border-color: var(--accent); }
@@ -44,6 +48,7 @@
     .oc-strip { background: #0f172a; border-radius: 7px; padding: 8px; font-size: 0.78rem; display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; border: 1px solid #1e293b; }
     .oc-tag { color: #cbd5e1; }
     .oc-tag strong { color: #38bdf8; }
+    .src-badge { font-size: 0.68rem; background: #1e293b; color: #94a3b8; padding: 2px 6px; border-radius: 4px; }
 
     .search-box { position: relative; margin-bottom: 14px; }
     .search-box input { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.95rem; outline: none; }
@@ -54,7 +59,7 @@
     .filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
     .tab { background: var(--card); color: var(--muted); border: 1px solid var(--border); padding: 7px 13px; border-radius: 20px; cursor: pointer; font-size: 0.84rem; }
     .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .status { text-align: center; color: #38bdf8; padding: 8px; font-size: 0.86rem; }
+    .status { text-align: center; color: #38bdf8; padding: 10px; font-size: 0.88rem; background: rgba(56,189,248,0.06); border-radius: 8px; margin-bottom: 12px; }
 
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(315px, 1fr)); gap: 12px; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; transition: 0.15s; }
@@ -85,6 +90,8 @@
     .card-foot { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
     .chart-btn { background: #2563eb; color: #fff; border: none; padding: 8px 12px; border-radius: 7px; font-size: 0.82rem; font-weight: 600; cursor: pointer; width: 100%; }
 
+    footer { margin-top: 24px; padding: 12px; border-top: 1px solid var(--border); font-size: 0.76rem; color: var(--muted); text-align: center; line-height: 1.5; background: #0f172a; border-radius: 8px; }
+
     /* Modal */
     .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 50; justify-content: center; align-items: center; padding: 12px; }
     .modal-bg.open { display: flex; }
@@ -100,7 +107,10 @@
 <body>
   <header>
     <div>
-      <h1>MarketEye Pro</h1>
+      <div class="title-wrap">
+        <h1>MarketEye Pro</h1>
+        <span id="mktStatusBadge" class="mkt-badge mkt-closed">Checking Market...</span>
+      </div>
       <div id="lastUpdated" class="sub-head">Auto-Refresh: 5m (Swing) | 60s (F&O)</div>
     </div>
     <div class="controls">
@@ -147,8 +157,10 @@
     <button class="tab" onclick="setFilter('SELL', this)" id="tabSell">Sell Zone</button>
   </div>
 
-  <div id="statusMsg" class="status">Loading live NSE data...</div>
+  <div id="statusMsg" class="status">⏳ NSE सर्व्हरवरून ताजा डेटा आणत आहोत, कृपया १५–३० सेकंद प्रतीक्षा करा...</div>
   <div id="cardsGrid" class="grid"></div>
+
+  <footer id="disclaimerFooter"></footer>
 
   <!-- Candlestick Chart & Option Chain Modal -->
   <div id="stockModal" class="modal-bg" onclick="if(event.target===this) closeModal()">
@@ -191,7 +203,9 @@
         allTab: "सर्व शेअर्स",
         buyTab: "Buy झोन",
         sellTab: "Sell झोन",
-        calcLabel: "भांडवलानुसार क्वांटिटी मोजा:"
+        calcLabel: "भांडवलानुसार क्वांटिटी मोजा:",
+        loadingWait: "⏳ NSE सर्व्हरवरून ताजा डेटा आणत आहोत, कृपया १५–३० सेकंद प्रतीक्षा करा...",
+        disclaimer: "<strong>अस्वीकरण (Disclaimer):</strong> MarketEye Pro हे केवळ शैक्षणिक आणि तांत्रिक विश्लेषणासाठी (Educational & Analytical Purpose Only) तयार केलेले साधन आहे. आम्ही SEBI-नोंदणीकृत गुंतवणूक सल्लागार नाही. कोणताही ट्रेड घेण्यापूर्वी स्वतःचा अभ्यास करावा किंवा नोंदणीकृत आर्थिक सल्लागाराचा सल्ला घ्यावा."
       },
       hi: {
         swingBtn: "📈 स्विंग ट्रेडिंग (Equity)",
@@ -202,7 +216,9 @@
         allTab: "सभी शेयर",
         buyTab: "Buy ज़ोन",
         sellTab: "Sell ज़ोन",
-        calcLabel: "पूंजी के अनुसार क्वांटिटी गणना:"
+        calcLabel: "पूंजी के अनुसार क्वांटिटी गणना:",
+        loadingWait: "⏳ NSE सर्वर से ताज़ा डेटा लोड हो रहा है, कृपया 15–30 सेकंड प्रतीक्षा करें...",
+        disclaimer: "<strong>अस्वीकरण (Disclaimer):</strong> MarketEye Pro केवल शैक्षणिक और तकनीकी विश्लेषण (Educational & Analytical Purpose Only) के लिए बनाया गया है। हम SEBI-पंजीकृत निवेश सलाहकार नहीं हैं। कोई भी ट्रेड लेने से पहले अपना स्वयं का विश्लेषण करें या वित्तीय सलाहकार से परामर्श लें।"
       },
       en: {
         swingBtn: "📈 Swing Trading (Equity)",
@@ -213,7 +229,9 @@
         allTab: "All Stocks",
         buyTab: "Buy Zone",
         sellTab: "Sell Zone",
-        calcLabel: "Position Size Calculator:"
+        calcLabel: "Position Size Calculator:",
+        loadingWait: "⏳ Waking up server & fetching fresh NSE market data (15–30 seconds)...",
+        disclaimer: "<strong>Disclaimer:</strong> MarketEye Pro is built strictly for educational and technical analysis purposes only. We are not SEBI-registered investment advisors. Please do your own research or consult a certified financial advisor before trading."
       }
     };
 
@@ -226,6 +244,27 @@
     let refreshTimer = null;
 
     document.getElementById('langSelect').value = currentLang;
+
+    function updateMarketStatus() {
+      const badge = document.getElementById('mktStatusBadge');
+      // Convert current UTC time to IST (UTC + 5:30)
+      const now = new Date();
+      const istOffset = 5.5 * 60 * 60 * 1000;
+      const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffset);
+      const day = istDate.getDay(); // 0 = Sun, 6 = Sat
+      const mins = istDate.getHours() * 60 + istDate.getMinutes();
+
+      const isWeekday = day >= 1 && day <= 5;
+      const isMarketHours = mins >= (9 * 60 + 15) && mins <= (15 * 60 + 30);
+
+      if (isWeekday && isMarketHours) {
+        badge.className = 'mkt-badge mkt-open';
+        badge.textContent = '● LIVE MARKET (NSE)';
+      } else {
+        badge.className = 'mkt-badge mkt-closed';
+        badge.textContent = '● MARKET CLOSED (Closing Data)';
+      }
+    }
 
     function changeLang(lang) {
       currentLang = lang;
@@ -242,6 +281,7 @@
       document.getElementById('tabBuy').textContent = t.buyTab;
       document.getElementById('tabSell').textContent = t.sellTab;
       document.getElementById('calcLabel').textContent = t.calcLabel;
+      document.getElementById('disclaimerFooter').innerHTML = t.disclaimer;
       const banner = document.getElementById('sectionBanner');
       banner.innerHTML = currentMode === 'SWING' ? t.swingBanner : t.fnoBanner;
     }
@@ -292,7 +332,7 @@
       const ocEl = document.getElementById(ocId);
       const sentEl = document.getElementById(sentId);
       if (!obj || !obj.price) {
-        el.innerHTML = '<span style="color:#94a3b8">Market Closed</span>';
+        el.innerHTML = '<span style="color:#94a3b8">Unavailable</span>';
         ocEl.textContent = 'Option Chain unavailable';
         return;
       }
@@ -301,10 +341,12 @@
       el.innerHTML = `₹${obj.price.toLocaleString('en-IN')} <span class="${cls}" style="font-size:0.9rem">(${sign}${obj.change_pct}%)</span>`;
       const oc = obj.option_chain || {};
       sentEl.textContent = oc.sentiment || '';
+      const srcLabel = oc.source || 'Derived OI Zone';
       ocEl.innerHTML = `
         <span class="oc-tag">PCR: <strong>${oc.pcr || '-'}</strong></span>
-        <span class="oc-tag">Support (Put OI): <strong style="color:#10b981">${oc.support || '-'}</strong></span>
-        <span class="oc-tag">Resistance (Call OI): <strong style="color:#ef4444">${oc.resistance || '-'}</strong></span>
+        <span class="oc-tag">Support: <strong style="color:#10b981">${oc.support || '-'}</strong></span>
+        <span class="oc-tag">Resistance: <strong style="color:#ef4444">${oc.resistance || '-'}</strong></span>
+        <span class="src-badge">${srcLabel}</span>
       `;
     }
 
@@ -356,7 +398,7 @@
               <span style="color:#38bdf8">${s.fno_strike}</span>
               <span>${s.fno_bias}</span>
             </div>
-            <div class="strength-sub">Support: ₹${s.support} | Resistance: ₹${s.resistance}</div>
+            <div class="strength-sub">Technical Support: ₹${s.support} | Resistance: ₹${s.resistance}</div>
           </div>
           <div class="ai-note">${noteText}</div>
           <div class="zones">
@@ -398,12 +440,14 @@
     }
 
     async function loadDashboard(silent = false) {
+      updateMarketStatus();
       const btn = document.getElementById('refreshBtn');
       const status = document.getElementById('statusMsg');
+      const t = I18N[currentLang];
       if (!silent) {
         btn.disabled = true;
         btn.textContent = 'Loading...';
-        status.textContent = 'Fetching live NSE data...';
+        status.textContent = t.loadingWait;
       }
       updateWlCount();
 
@@ -464,11 +508,13 @@
       document.getElementById('mSub').textContent = `${s.name} | Trade Strength: ${s.strength_score}/100`;
 
       const oc = s.option_chain || {};
+      const srcLabel = oc.source || 'Derived OI Zone';
       document.getElementById('mOC').innerHTML = `
         <span class="oc-tag">Option PCR: <strong>${oc.pcr || '-'}</strong></span>
         <span class="oc-tag">Sentiment: <strong>${oc.sentiment || '-'}</strong></span>
         <span class="oc-tag">Support: <strong style="color:#10b981">₹${oc.support || '-'}</strong></span>
         <span class="oc-tag">Resistance: <strong style="color:#ef4444">₹${oc.resistance || '-'}</strong></span>
+        <span class="src-badge">${srcLabel}</span>
       `;
 
       document.getElementById('mZones').innerHTML = `
@@ -561,6 +607,7 @@
       ctx.stroke();
     }
 
+    updateMarketStatus();
     applyTranslations();
     setupAutoRefresh();
     loadDashboard();
