@@ -41,7 +41,7 @@
     .section-banner { background: #0f172a; border-left: 4px solid #10b981; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; font-size: 0.82rem; color: #cbd5e1; line-height: 1.5; }
     .section-banner.fno-theme { border-left-color: #3b82f6; }
 
-    .indices { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .indices { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin-bottom: 14px; }
     .idx-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
     .idx-title { font-size: 0.82rem; color: var(--muted); display: flex; justify-content: space-between; font-weight: 600; }
     .idx-val { font-size: 1.25rem; font-weight: 700; margin: 4px 0 8px; }
@@ -133,17 +133,22 @@
 
   <div id="sectionBanner" class="section-banner"></div>
 
-  <!-- F&O INDICES & OPTION CHAIN -->
-  <div id="indicesSection" class="indices" style="display:none;">
+  <!-- INDICES & OPTION CHAIN (ALWAYS VISIBLE) -->
+  <div id="indicesSection" class="indices">
     <div class="idx-card">
       <div class="idx-title"><span>NIFTY 50 (Option Chain)</span><span id="niftySent" style="color:#38bdf8"></span></div>
-      <div id="niftyVal" class="idx-val">Loading...</div>
-      <div id="niftyOC" class="oc-strip">Loading Option Chain...</div>
+      <div id="niftyVal" class="idx-val">NIFTY 50</div>
+      <div id="niftyOC" class="oc-strip"><span class="oc-tag">PCR: <strong>-</strong></span><span class="oc-tag">Support: <strong style="color:#10b981">-</strong></span><span class="oc-tag">Resistance: <strong style="color:#ef4444">-</strong></span><span class="src-badge">NSE / Index Feed</span></div>
     </div>
     <div class="idx-card">
       <div class="idx-title"><span>BANK NIFTY (Option Chain)</span><span id="bnSent" style="color:#38bdf8"></span></div>
-      <div id="bnVal" class="idx-val">Loading...</div>
-      <div id="bnOC" class="oc-strip">Loading Option Chain...</div>
+      <div id="bnVal" class="idx-val">BANK NIFTY</div>
+      <div id="bnOC" class="oc-strip"><span class="oc-tag">PCR: <strong>-</strong></span><span class="oc-tag">Support: <strong style="color:#10b981">-</strong></span><span class="oc-tag">Resistance: <strong style="color:#ef4444">-</strong></span><span class="src-badge">NSE / Index Feed</span></div>
+    </div>
+    <div class="idx-card">
+      <div class="idx-title"><span>NIFTY 250 / NIFTY 500</span><span style="color:#38bdf8">Broad Market</span></div>
+      <div id="broadVal" class="idx-val">NIFTY 250 & 500</div>
+      <div id="broadOC" class="oc-strip"><span class="oc-tag">Indices: <strong>NIFTY 50 · NIFTY 250 · NIFTY 500</strong></span><span class="src-badge">Market Breadth</span></div>
     </div>
   </div>
 
@@ -200,7 +205,7 @@
         swingBtn: "📈 स्विंग ट्रेडिंग (Equity)",
         fnoBtn: "⚡ F&O टर्मिनल (Options)",
         swingBanner: "<strong>📈 Swing Trading विभाग:</strong> प्रत्येक कार्डवर सक्रिय सिग्नलनुसार (BUY किंवा SELL) फक्त एकच स्पष्ट <strong>Entry Zone, Target आणि Stop Loss</strong> दिला आहे.",
-        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> वर <strong>Nifty / Bank Nifty Option Chain (PCR, Support, Resistance)</strong> आणि खाली F&O शेअर्ससाठी सुचवलेले <strong>Call/Put Strike (CE/PE)</strong> दिले आहेत. (Auto-Refresh: दर ६० सेकंदांनी)",
+        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> वर <strong>NIFTY 50, BANK NIFTY व NIFTY 250/500</strong> आणि खाली F&O शेअर्ससाठी सुचवलेले <strong>Call/Put Strike (CE/PE)</strong> दिले आहेत. (Auto-Refresh: दर ६० सेकंदांनी)",
         chartBtn: "📊 कँडलस्टिक चार्ट आणि विश्लेषण पहा",
         allTab: "सर्व शेअर्स",
         buyTab: "Buy झोन",
@@ -213,7 +218,7 @@
         swingBtn: "📈 स्विंग ट्रेडिंग (Equity)",
         fnoBtn: "⚡ F&O टर्मिनल (Options)",
         swingBanner: "<strong>📈 Swing Trading विभाग:</strong> प्रत्येक कार्ड पर सक्रिय सिग्नल के अनुसार (BUY या SELL) केवल एक स्पष्ट <strong>Entry Zone, Target और Stop Loss</strong> दिया गया है।",
-        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> ऊपर <strong>Nifty / Bank Nifty Option Chain (PCR, Support, Resistance)</strong> और नीचे F&O शेयरों के लिए सुझाए गए <strong>Call/Put Strike (CE/PE)</strong> दिए गए हैं। (Auto-Refresh: हर 60 सेकंड में)",
+        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> ऊपर <strong>NIFTY 50, BANK NIFTY व NIFTY 250/500</strong> और नीचे F&O शेयरों के लिए सुझाए गए <strong>Call/Put Strike (CE/PE)</strong> दिए गए हैं। (Auto-Refresh: हर 60 सेकंड में)",
         chartBtn: "📊 कैंडलस्टिक चार्ट और विश्लेषण देखें",
         allTab: "सभी शेयर",
         buyTab: "Buy ज़ोन",
@@ -224,9 +229,9 @@
       },
       en: {
         swingBtn: "📈 Swing Trading (Equity)",
-        fnoBtn: "⚡ F&O Terminal (Options)",
+        fnoBtn: "⚡ F&O टर्मिनल (Options)",
         swingBanner: "<strong>📈 Swing Trading Section:</strong> Each card shows a single active trade plan (BUY or SELL) with clear <strong>Entry Zone, Target & Stop Loss</strong>.",
-        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> Live <strong>Nifty & Bank Nifty Option Chain (PCR, Support, Resistance)</strong> and suggested <strong>Call/Put Strikes (CE/PE)</strong>. (Auto-Refresh: Every 60s)",
+        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> Live <strong>NIFTY 50, BANK NIFTY & NIFTY 250/500</strong> overview and suggested <strong>Call/Put Strikes (CE/PE)</strong>. (Auto-Refresh: Every 60s)",
         chartBtn: "📊 View Candlestick Chart & Analysis",
         allTab: "All Stocks",
         buyTab: "Buy Zone",
@@ -299,16 +304,15 @@
       const btnFno = document.getElementById('btnFno');
       const banner = document.getElementById('sectionBanner');
       const idxSec = document.getElementById('indicesSection');
+      if (idxSec) idxSec.style.display = 'grid';
 
       if (mode === 'SWING') {
         btnSwing.className = 'mode-btn active-swing';
         btnFno.className = 'mode-btn';
-        idxSec.style.display = 'none';
         banner.className = 'section-banner';
       } else {
         btnSwing.className = 'mode-btn';
         btnFno.className = 'mode-btn active-fno';
-        idxSec.style.display = 'grid';
         banner.className = 'section-banner fno-theme';
       }
       applyTranslations();
@@ -328,20 +332,20 @@
       renderCards(allStocks);
     }
 
-    function formatIdx(valId, ocId, sentId, obj) {
+    function formatIdx(valId, ocId, sentId, obj, fallbackLabel) {
       const el = document.getElementById(valId);
       const ocEl = document.getElementById(ocId);
       const sentEl = document.getElementById(sentId);
       if (!obj || !obj.price) {
-        el.innerHTML = '<span style="color:#94a3b8">Unavailable</span>';
-        ocEl.textContent = 'Option Chain unavailable';
+        el.innerHTML = `${fallbackLabel} <span style="color:#fbbf24;font-size:0.85rem">(Market Closed / Standby)</span>`;
+        ocEl.innerHTML = `<span class="oc-tag">PCR: <strong>-</strong></span><span class="oc-tag">Support: <strong style="color:#10b981">-</strong></span><span class="oc-tag">Resistance: <strong style="color:#ef4444">-</strong></span><span class="src-badge">Updates on Market Open</span>`;
         return;
       }
       const cls = obj.change_pct >= 0 ? 'pos' : 'neg';
       const sign = obj.change_pct >= 0 ? '+' : '';
       el.innerHTML = `₹${obj.price.toLocaleString('en-IN')} <span class="${cls}" style="font-size:0.9rem">(${sign}${obj.change_pct}%)</span>`;
       const oc = obj.option_chain || {};
-      sentEl.textContent = oc.sentiment || '';
+      if (sentEl) sentEl.textContent = oc.sentiment || '';
       const srcLabel = oc.source || 'Derived OI Zone';
       ocEl.innerHTML = `
         <span class="oc-tag">PCR: <strong>${oc.pcr || '-'}</strong></span>
@@ -349,6 +353,22 @@
         <span class="oc-tag">Resistance: <strong style="color:#ef4444">${oc.resistance || '-'}</strong></span>
         <span class="src-badge">${srcLabel}</span>
       `;
+    }
+
+    function formatBroadIndices(idxRes) {
+      const el = document.getElementById('broadVal');
+      const ocEl = document.getElementById('broadOC');
+      const n250 = idxRes && (idxRes.nifty250 || idxRes.nifty_250);
+      const n500 = idxRes && (idxRes.nifty500 || idxRes.nifty_500);
+      if (n250 && n250.price) {
+        const cls = n250.change_pct >= 0 ? 'pos' : 'neg';
+        const sign = n250.change_pct >= 0 ? '+' : '';
+        el.innerHTML = `NIFTY 250: ₹${n250.price.toLocaleString('en-IN')} <span class="${cls}" style="font-size:0.88rem">(${sign}${n250.change_pct}%)</span>`;
+      } else {
+        el.innerHTML = `NIFTY 50 · 250 · 500 <span style="color:#38bdf8;font-size:0.82rem">(Tracked)</span>`;
+      }
+      const n500Txt = (n500 && n500.price) ? `NIFTY 500: <strong>₹${n500.price.toLocaleString('en-IN')}</strong>` : `Indices: <strong>NIFTY 50 · 250 · 500</strong>`;
+      ocEl.innerHTML = `<span class="oc-tag">${n500Txt}</span><span class="src-badge">Index Suite</span>`;
     }
 
     function renderCards(list) {
@@ -459,11 +479,12 @@
 
       try {
         const [idxRes, sigRes] = await Promise.all([
-          fetch('/indices').then(r => r.json()),
+          fetch('/indices').then(r => r.json()).catch(() => ({})),
           fetch(`/signals?symbols=${mergedSyms.join(',')}`).then(r => r.json())
         ]);
-        formatIdx('niftyVal', 'niftyOC', 'niftySent', idxRes.nifty);
-        formatIdx('bnVal', 'bnOC', 'bnSent', idxRes.banknifty);
+        formatIdx('niftyVal', 'niftyOC', 'niftySent', idxRes.nifty, 'NIFTY 50');
+        formatIdx('bnVal', 'bnOC', 'bnSent', idxRes.banknifty, 'BANK NIFTY');
+        formatBroadIndices(idxRes);
         allStocks = sigRes.stocks || [];
         renderCards(allStocks);
         const modeTxt = currentMode === 'FNO' ? '60s Auto' : '5m Auto';
