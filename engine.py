@@ -91,7 +91,6 @@ def analyze_stock(symbol: str, include_chart: bool = False):
         curr_vol = float(volume.iloc[-1])
         vol_ratio = round(curr_vol / avg_vol, 2) if avg_vol > 0 else 1.0
 
-        # 1. Technical Pillar (Max 30 pts)
         tech_score = 15
         if current_price > ema20:
             tech_score += 6
@@ -106,10 +105,8 @@ def analyze_stock(symbol: str, include_chart: bool = False):
         elif rsi > 75 or rsi < 35:
             tech_score -= 3
         tech_score = max(0, min(30, tech_score))
-
         tech_grade = "Bullish" if tech_score >= 21 else ("Neutral" if tech_score >= 13 else "Bearish")
 
-        # Fast fundamentals (safe fallback so requests never stall)
         pe = pb = roe = de = rev_growth = None
         company_name = clean_sym
         if include_chart:
@@ -124,7 +121,6 @@ def analyze_stock(symbol: str, include_chart: bool = False):
             except Exception:
                 pass
 
-        # 2. Valuation Pillar (Max 25 pts)
         val_score = 14
         if isinstance(pe, (int, float)) and pe > 0:
             val_score += 8 if pe < 22 else (3 if pe <= 40 else -6)
@@ -133,7 +129,6 @@ def analyze_stock(symbol: str, include_chart: bool = False):
         val_score = max(0, min(25, val_score))
         val_grade = "Attractive" if val_score >= 18 else ("Fair" if val_score >= 11 else "Expensive")
 
-        # 3. Quality Pillar (Max 25 pts)
         qual_score = 14
         if isinstance(roe, (int, float)):
             qual_score += 7 if roe >= 0.15 else (2 if roe >= 0.08 else -4)
@@ -142,7 +137,6 @@ def analyze_stock(symbol: str, include_chart: bool = False):
         qual_score = max(0, min(25, qual_score))
         qual_grade = "Strong" if qual_score >= 18 else ("Average" if qual_score >= 11 else "Weak")
 
-        # 4. Trend Pillar (Max 20 pts)
         ret_1m = ((current_price - float(close.iloc[-22])) / float(close.iloc[-22])) * 100
         trend_score = 10 + (6 if ret_1m > 4 else (-6 if ret_1m < -4 else 0))
         if isinstance(rev_growth, (int, float)):
@@ -152,11 +146,9 @@ def analyze_stock(symbol: str, include_chart: bool = False):
 
         mojo_score = int(tech_score + val_score + qual_score + trend_score)
 
-        # Swing Support & Resistance Levels
         swing_low = round(float(df["Low"].iloc[-12:].min()), 2)
         swing_high = round(float(df["High"].iloc[-12:].max()), 2)
 
-        # Ideal Buy Entry Zone (Near 20-EMA / Support)
         buy_base = round(min(current_price, max(ema20, swing_low)), 2)
         buy_low = round(buy_base * 0.992, 2)
         buy_high = round(buy_base * 1.005, 2)
@@ -164,7 +156,6 @@ def analyze_stock(symbol: str, include_chart: bool = False):
         buy_risk = max(buy_high - buy_sl, current_price * 0.02)
         buy_target = round(buy_high + (buy_risk * 2.0), 2)
 
-        # Ideal Sell / Short Entry Zone (Near 20-EMA / Resistance)
         sell_base = round(max(current_price, min(ema20, swing_high)), 2)
         sell_low = round(sell_base * 0.995, 2)
         sell_high = round(sell_base * 1.008, 2)
@@ -172,7 +163,6 @@ def analyze_stock(symbol: str, include_chart: bool = False):
         sell_risk = max(sell_sl - sell_low, current_price * 0.02)
         sell_target = round(max(1.0, sell_low - (sell_risk * 2.0)), 2)
 
-        # Side Classification (BUY vs SELL)
         if current_price >= ema20 and tech_score >= 16:
             side = "BUY"
             signal = "STRONG BUY" if mojo_score >= 70 else "BUY"
@@ -213,7 +203,71 @@ def analyze_stock(symbol: str, include_chart: bool = False):
             "stop_loss": active_sl,
             "target": active_target,
             "logic": logic
-        }@app.get("/manifest.json")
+        }
+
+        if include_chart:
+            sub = df.tail(60)
+            candles, ema20_list, volumes = [], [], []
+            for idx, row in sub.iterrows():
+                dt = idx.strftime("%Y-%m-%d")
+                candles.append({
+                    "time": dt,
+                    "open": round(float(row["Open"]), 2),
+                    "high": round(float(row["High"]), 2),
+                    "low": round(float(row["Low"]), 2),
+                    "close": round(float(row["Close"]), 2)
+                })
+                ema20_list.append({"time": dt, "value": round(float(row["EMA20"]), 2)})
+                volumes.append({"time": dt, "value": int(row["Volume"])})
+            result["chart"] = {"candles": candles, "ema20": ema20_list, "volumes": volumes}
+
+        CACHE[cache_key] = {"ts": now, "data": result}
+        return result
+    except Exception:
+        return None
+
+@app.get("/", response_class=HTMLResponse)
+def serve_home():
+    with open("index.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+@app.get("/manifest.json")
 def serve_manifest():
     with open("manifest.json", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read(), media_type="application/manifest+json")
+
+@app.get("/indices")
+def get_indices():
+    out = {}
+    for key, sym in [("nifty", "^NSEI"), ("banknifty", "^NSEBANK")]:
+        try:
+            hist = yf.Ticker(sym).history(period="5d")
+            c1 = float(hist["Close"].iloc[-1])
+            c0 = float(hist["Close"].iloc[-2])
+            out[key] = {"price": round(c1, 2), "change_pct": round(((c1 - c0) / c0) * 100, 2)}
+        except Exception:
+            out[key] = {"price": 0, "change_pct": 0}
+    return out
+
+@app.get("/suggest/{query}")
+def suggest_stocks(query: str):
+    q = query.upper().strip()
+    matches = [s for s in NSE_STOCKS if s["symbol"].startswith(q) or q in s["name"].upper()][:6]
+    return {"suggestions": matches}
+
+@app.get("/search/{symbol}")
+def search_stock(symbol: str):
+    res = analyze_stock(symbol, include_chart=True)
+    if not res:
+        return {"error": f"'{symbol.upper()}' साठी डेटा सापडला नाही. कृपया योग्य NSE सिम्बॉल तपासा."}
+    return {"stock": res}
+
+@app.get("/signals")
+def get_signals(symbols: str = None):
+    sym_list = [s.strip() for s in symbols.split(",") if s.strip()] if symbols else SCAN_UNIVERSE
+    stocks = []
+    for sym in sym_list:
+        res = analyze_stock(sym, include_chart=False)
+        if res:
+            stocks.append(res)
+    return {"stocks": stocks}
