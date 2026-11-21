@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketEye Pro</title>
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #0b0f19; color: #f8fafc; max-width: 480px; margin: 0 auto; padding-bottom: 90px; }
+        
+        .header { background: #111827; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1f2937; position: sticky; top: 0; z-index: 30; }
+        .header h1 { font-size: 20px; color: #38bdf8; }
+        .header span { font-size: 11px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 2px 7px; border-radius: 6px; margin-left: 6px; }
+        .refresh-btn { background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+
+        .indices-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 16px 4px; }
+        .idx-card { background: #111827; border: 1px solid #1f2937; border-radius: 10px; padding: 10px 12px; }
+        .idx-name { font-size: 11px; color: #94a3b8; font-weight: 700; }
+        .idx-val { font-size: 15px; font-weight: 700; margin-top: 2px; }
+
+        .search-wrapper { position: relative; padding: 12px 16px 4px; z-index: 25; }
+        .search-box { display: flex; gap: 8px; }
+        .search-box input { flex: 1; background: #111827; border: 1px solid #334155; color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 14px; text-transform: uppercase; outline: none; }
+        .search-box input:focus { border-color: #38bdf8; }
+        .search-box button { background: #38bdf8; color: #0b0f19; border: none; padding: 0 18px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+        
+        .suggestions { position: absolute; left: 16px; right: 16px; top: 56px; background: #1e293b; border: 1px solid #38bdf8; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.6); display: none; }
+        .sug-item { padding: 10px 14px; border-bottom: 1px solid #334155; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .sug-item:last-child { border-bottom: none; }
+        .sug-item:hover { background: #0f172a; }
+        .sug-sym { font-weight: 700; color: #38bdf8; font-size: 14px; }
+        .sug-name { font-size: 12px; color: #cbd5e1; }
+
+        /* Buy Side / Sell Side Toggle Bar */
+        .side-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; background: #111827; padding: 6px; border-radius: 12px; border: 1px solid #1f2937; }
+        .side-btn { padding: 9px; border-radius: 8px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; background: transparent; color: #94a3b8; transition: 0.2s; }
+        .side-btn.active-buy { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid #22c55e; }
+        .side-btn.active-sell { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+
+        .container { padding: 14px 16px; }
+        .section-title { font-size: 13px; color: #94a3b8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .card { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+        .search-highlight { border: 1.5px solid #38bdf8; background: #0f172a; }
+
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; }
+        .stock-meta { flex: 1; }
+        .symbol { font-size: 18px; font-weight: 700; color: #ffffff; }
+        .comp-name { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+        .price-row { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; }
+        .price { font-size: 17px; font-weight: 700; }
+        .change { font-size: 12px; font-weight: 600; }
+        .pos { color: #22c55e; }
+        .neg { color: #ef4444; }
+
+        .score-box { display: flex; flex-direction: column; align-items: center; }
+        .score-ring { width: 52px; height: 52px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; border: 3px solid #22c55e; background: rgba(34, 197, 94, 0.12); color: #22c55e; }
+        .score-ring.mid { border-color: #f59e0b; background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+        .score-ring.low { border-color: #ef4444; background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+        .score-sub { font-size: 9px; font-weight: 600; color: #94a3b8; }
+        .verdict-pill { margin-top: 5px; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 5px; }
+        .STRONG-BUY, .BUY { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid #22c55e; }
+        .STRONG-SELL, .SELL { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+
+        /* Exact Buy & Sell Price Setup Box */
+        .zones-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .zone-box { border-radius: 9px; padding: 9px 10px; font-size: 11px; line-height: 1.5; }
+        .zone-buy { background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.35); }
+        .zone-sell { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.35); }
+        .zone-title-buy { font-weight: 800; color: #22c55e; font-size: 11px; margin-bottom: 2px; }
+        .zone-title-sell { font-weight: 800; color: #ef4444; font-size: 11px; margin-bottom: 2px; }
+        .zone-price { font-weight: 700; color: #f8fafc; font-size: 12px; }
+
+        .pillars-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+        .pillar-item { background: #0b0f19; border: 1px solid #1e293b; border-radius: 8px; padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; }
+        .pillar-lbl { font-size: 11px; color: #94a3b8; }
+        .pillar-val { font-size: 11px; font-weight: 700; }
+        .g-good { color: #22c55e; }
+        .g-mid { color: #f59e0b; }
+        .g-bad { color: #ef4444; }
+
+        .card-actions { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+        .mini-btn { background: #1e293b; color: #38bdf8; border: 1px solid #334155; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
+        .mini-btn.saved { background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: #f87171; }
+
+        .calc-box { background: #0b0f19; border: 1px dashed #334155; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; font-size: 12px; }
+        .calc-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .calc-row input { width: 105px; background: #111827; border: 1px solid #38bdf8; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+        .calc-out { margin-top: 6px; color: #cbd5e1; font-size: 11px; display: flex; justify-content: space-between; }
+
+        .chart-box { background: #0b0f19; border: 1px solid #1e293b; border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #94a3b8; margin-bottom: 6px; }
+        .fs-btn { background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; }
+        canvas.pro-canvas { width: 100%; height: 240px; display: block; border-radius: 6px; cursor: crosshair; }
+
+        .modal-overlay { position: fixed; inset: 0; background: #080c14; z-index: 100; display: none; flex-direction: column; max-width: 650px; margin: 0 auto; }
+        .modal-top { background: #111827; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1f2937; }
+        .modal-title { font-size: 17px; font-weight: 700; color: #38bdf8; }
+        .close-modal { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #f87171; padding: 5px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .ohlc-bar { background: #0f172a; padding: 8px 16px; font-size: 12px; color: #cbd5e1; display: flex; justify-content: space-between; border-bottom: 1px solid #1e293b; }
+        .modal-body { flex: 1; padding: 10px; display: flex; align-items: center; }
+        canvas.fs-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+
+        .logic { font-size: 11px; color: #94a3b8; line-height: 1.4; }
+        .disclaimer { font-size: 10px; color: #64748b; text-align: center; padding: 12px 16px; line-height: 1.4; }
+        .loading { text-align: center; padding: 30px; color: #38bdf8; font-size: 14px; }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #111827; border-top: 1px solid #1f2937; display: flex; z-index: 30; }
+        .nav-item { flex: 1; text-align: center; padding: 12px 0; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .nav-item.active { color: #38bdf8; border-top: 2px solid #38bdf8; background: #0f172a; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>MarketEye 📈<span>PRO</span></h1>
+        <button class="refresh-btn" onclick="refreshCurrentTab()">↻ Refresh</button>
+    </div>
+
+    <div class="indices-bar">
+        <div class="idx-card">
+            <div class="idx-name">NIFTY 50</div>
+            <div class="idx-val" id="nifty-val">--</div>
+        </div>
+        <div class="idx-card">
+            <div class="idx-name">BANK NIFTY</div>
+            <div class="idx-val" id="banknifty-val">--</div>
+        </div>
+    </div>
+
+    <div class="search-wrapper">
+        <div class="search-box">
+            <input type="text" id="stock-input" autocomplete="off" placeholder="स्टॉक सर्च करा (उदा. BHARTIARTL, TCS...)" oninput="handleTyping(this.value)" onkeypress="if(event.key==='Enter') searchStock()">
+            <button onclick="searchStock()">Scan</button>
+        </div>
+        <div class="suggestions" id="suggestions-box"></div>
+    </div>
+
+    <div class="container">
+        <div id="search-result"></div>
+
+        <div id="tab-radar">
+            <div class="side-tabs">
+                <button class="side-btn active-buy" id="btn-buy-side" onclick="setRadarSide('BUY')">🟢 Buy Side (<span id="buy-count">0</span>)</button>
+                <button class="side-btn" id="btn-sell-side" onclick="setRadarSide('SELL')">🔴 Sell Side (<span id="sell-count">0</span>)</button>
+            </div>
+            <div id="radar-list"><div class="loading">Buy व Sell सेटअप्स स्कॅन होत आहेत...</div></div>
+        </div>
+
+        <div id="tab-watchlist" style="display:none;">
+            <div class="section-title">My Saved Watchlist</div>
+            <div id="watchlist-list"><div class="loading">वॉचलिस्ट तपासत आहे...</div></div>
+        </div>
+
+        <div class="disclaimer">
+            <b>SEBI Educational Disclaimer:</b> MarketEye Pro provides automated technical & fundamental data strictly for educational research. We are not SEBI-registered investment advisors.
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="fs-modal">
+        <div class="modal-top">
+            <div class="modal-title" id="fs-title">STOCK PRO CHART</div>
+            <button class="close-modal" onclick="closeFullScreen()">✕ Close</button>
+        </div>
+        <div class="ohlc-bar" id="fs-ohlc">कँडलवर बोट/माऊस ठेवा: तारीख व OHLC दिसेल</div>
+        <div class="modal-body">
+            <canvas id="fs-canvas" class="fs-canvas"></canvas>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" id="nav-radar" onclick="switchTab('radar')">📡 Buy / Sell Radar</div>
+        <div class="nav-item" id="nav-watchlist" onclick="switchTab('watchlist')">⭐ Watchlist</div>
+    </div>
+
+    <script>
+        let currentTab = 'radar';
+        let currentSide = 'BUY';
+        let cachedRadarStocks = [];
+        let myWatchlist = JSON.parse(localStorage.getItem('marketeye_wl')) || ['BHARTIARTL', 'ZOMATO'];
+        let activeStockData = null;
+
+        async function fetchWithTimeout(url, ms = 18000) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), ms);
+            try {
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(id);
+                return await res.json();
+            } catch (e) {
+                clearTimeout(id);
+                throw e;
+            }
+        }
+
+        async function handleTyping(val) {
+            const box = document.getElementById('suggestions-box');
+            const q = val.trim();
+            if (!q) { box.style.display = 'none'; return; }
+            try {
+                const data = await fetchWithTimeout('/suggest/' + encodeURIComponent(q), 4000);
+                if (!data.suggestions || data.suggestions.length === 0) { box.style.display = 'none'; return; }
+                box.innerHTML = data.suggestions.map(s => `
+                    <div class="sug-item" onclick="selectSuggestion('${s.symbol}')">
+                        <span class="sug-sym">${s.symbol}</span>
+                        <span class="sug-name">${s.name}</span>
+                    </div>
+                `).join('');
+                box.style.display = 'block';
+            } catch (e) {}
+        }
+
+        function selectSuggestion(symbol) {
+            document.getElementById('stock-input').value = symbol;
+            document.getElementById('suggestions-box').style.display = 'none';
+            searchStock(symbol);
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-wrapper')) {
+                document.getElementById('suggestions-box').style.display = 'none';
+            }
+        });
+
+        function toggleWatchlist(symbol) {
+            if (myWatchlist.includes(symbol)) {
+                myWatchlist = myWatchlist.filter(s => s !== symbol);
+            } else {
+                myWatchlist.push(symbol);
+            }
+            localStorage.setItem('marketeye_wl', JSON.stringify(myWatchlist));
+            refreshCurrentTab();
+        }
+
+        function pillarColor(val) {
+            if (['Bullish', 'Attractive', 'Strong', 'Positive'].includes(val)) return 'g-good';
+            if (['Neutral', 'Fair', 'Average', 'Flat'].includes(val)) return 'g-mid';
+            return 'g-bad';
+        }
+
+        function updatePositionCalc(symbol, price, sl, tgt) {
+            const cap = parseFloat(document.getElementById(`cap-${symbol}`).value) || 0;
+            const out = document.getElementById(`calc-out-${symbol}`);
+            if (cap <= 0 || price <= 0) { out.innerHTML = ''; return; }
+            const qty = Math.floor(cap / price);
+            const profit = Math.round(Math.abs(tgt - price) * qty);
+            const loss = Math.round(Math.abs(price - sl) * qty);
+            out.innerHTML = `
+                <span>Qty: <b>${qty} shares</b></span>
+                <span style="color:#4ade80;">Est. Gain: +₹${profit}</span>
+                <span style="color:#f87171;">Max Risk: -₹${loss}</span>
+            `;
+        }
+
+        function drawProCandlestick(canvasId, chartData, slPrice, tgtPrice, targetHeight = 240, hoverIdx = -1) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas || !chartData || !chartData.candles) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            const W = rect.width || 380;
+            const H = targetHeight;
+
+            canvas.width = W * dpr;
+            canvas.height = H * dpr;
+            ctx.scale(dpr, dpr);
+
+            const candles = chartData.candles;
+            const emas = chartData.ema20;
+            const vols = chartData.volumes;
+            const n = candles.length;
+
+            const padL = 8, padR = 52, padT = 16, padB = 22;
+            const chartH = H - padT - padB;
+            const chartW = W - padL - padR;
+
+            let allPrices = candles.flatMap(c => [c.high, c.low]);
+            allPrices.push(slPrice, tgtPrice);
+            const minP = Math.min(...allPrices);
+            const maxP = Math.max(...allPrices);
+            const rangeP = (maxP - minP) || 1;
+            const maxVol = Math.max(...vols.map(v => v.value)) || 1;
+
+            const yOf = (price) => padT + chartH - ((price - minP) / rangeP) * chartH;
+
+            ctx.fillStyle = '#080c14';
+            ctx.fillRect(0, 0, W, H);
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            ctx.font = '11px Segoe UI';
+            ctx.fillStyle = '#64748b';
+
+            for (let i = 0; i <= 5; i++) {
+                const y = padT + (chartH / 5) * i;
+                const priceLbl = (maxP - (rangeP / 5) * i).toFixed(1);
+                ctx.beginPath();
+                ctx.moveTo(padL, y);
+                ctx.lineTo(W - padR, y);
+                ctx.stroke();
+                ctx.fillText(priceLbl, W - padR + 5, y + 4);
+            }
+
+            const drawLevelLine = (price, color, label) => {
+                const y = yOf(price);
+                ctx.save();
+                ctx.setLineDash([4, 3]);
+                ctx.strokeStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(padL, y);
+                ctx.lineTo(W - padR, y);
+                ctx.stroke();
+                ctx.restore();
+                ctx.fillStyle = color;
+                ctx.fillText(label, W - padR + 5, y + 4);
+            };
+            drawLevelLine(tgtPrice, '#4ade80', 'TGT');
+            drawLevelLine(slPrice, '#f87171', 'SL');
+
+            const step = chartW / n;
+            const bodyW = Math.max(3, step * 0.65);
+
+            candles.forEach((c, i) => {
+                const x = padL + i * step + step / 2;
+                const isUp = c.close >= c.open;
+                const color = isUp ? '#22c55e' : '#ef4444';
+
+                const vH = (vols[i].value / maxVol) * (chartH * 0.22);
+                ctx.fillStyle = isUp ? 'rgba(34, 197, 94, 0.25)' : 'rgba(239, 68, 68, 0.25)';
+                ctx.fillRect(x - bodyW / 2, padT + chartH - vH, bodyW, vH);
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.4;
+                ctx.beginPath();
+                ctx.moveTo(x, yOf(c.high));
+                ctx.lineTo(x, yOf(c.low));
+                ctx.stroke();
+
+                const yOpen = yOf(c.open);
+                const yClose = yOf(c.close);
+                const top = Math.min(yOpen, yClose);
+                const height = Math.max(2, Math.abs(yClose - yOpen));
+                ctx.fillStyle = color;
+                ctx.fillRect(x - bodyW / 2, top, bodyW, height);
+            });
+
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            emas.forEach((e, i) => {
+                const x = padL + i * step + step / 2;
+                const y = yOf(e.value);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            if (hoverIdx >= 0 && hoverIdx < n) {
+                const hx = padL + hoverIdx * step + step / 2;
+                const hy = yOf(candles[hoverIdx].close);
+                ctx.save();
+                ctx.setLineDash([3, 3]);
+                ctx.strokeStyle = '#94a3b8';
+                ctx.beginPath();
+                ctx.moveTo(hx, padT);
+                ctx.lineTo(hx, padT + chartH);
+                ctx.moveTo(padL, hy);
+                ctx.lineTo(W - padR, hy);
+                ctx.stroke();
