@@ -63,4 +63,436 @@
     .star-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; line-height: 1; }
     .star-btn.saved { color: var(--gold); }
     .cname { font-size: 0.78rem; color: var(--muted); }
-    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight:
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
+    .buy { background: rgba(16,185,129,0.18); color: var(--green); }
+    .sell { background: rgba(239,68,68,0.18); color: var(--red); }
+    .price-row { display: flex; justify-content: space-between; align-items: baseline; margin: 8px 0; }
+    .price { font-size: 1.3rem; font-weight: 700; }
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+
+    .strength-box { background: #1e293b; padding: 6px 9px; border-radius: 7px; margin-bottom: 8px; }
+    .strength-top { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: var(--gold); }
+    .strength-sub { font-size: 0.7rem; color: #cbd5e1; margin-top: 2px; }
+
+    .ai-note { font-size: 0.78rem; color: #e2e8f0; background: rgba(56,189,248,0.08); border-left: 3px solid #38bdf8; padding: 6px 8px; border-radius: 4px; margin-bottom: 8px; }
+    .zones { background: #0f172a; border-radius: 8px; padding: 9px; font-size: 0.82rem; margin: 8px 0; line-height: 1.6; }
+    .pillars { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; font-size: 0.75rem; }
+    .pill { background: #1e293b; padding: 3px 7px; border-radius: 5px; color: #cbd5e1; }
+    .card-foot { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .chart-btn { background: #2563eb; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; width: 100%; }
+
+    /* Modal */
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 50; justify-content: center; align-items: center; padding: 12px; }
+    .modal-bg.open { display: flex; }
+    .modal { background: #111827; border: 1px solid #334155; border-radius: 14px; max-width: 680px; width: 100%; max-height: 92vh; overflow-y: auto; padding: 16px; }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 10px; margin-bottom: 10px; }
+    .close-btn { background: #1e293b; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 700; }
+    .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.75rem; color: #cbd5e1; margin: 6px 0; }
+    canvas { width: 100%; height: 240px; background: #0b0f19; border-radius: 8px; border: 1px solid #1e293b; }
+    .calc-box { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 0.85rem; }
+    .calc-box input { background: #1e293b; border: 1px solid #334155; color: #fff; padding: 5px 8px; border-radius: 6px; width: 110px; margin-left: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>MarketEye Pro</h1>
+      <div id="lastUpdated" class="sub-head">NSE Swing Trading & F&O Analytics</div>
+    </div>
+    <button id="refreshBtn" class="btn" onclick="loadDashboard()">Refresh</button>
+  </header>
+
+  <!-- TWO DISTINCT MAIN SECTIONS -->
+  <div class="mode-bar">
+    <button id="btnSwing" class="mode-btn active-swing" onclick="switchMode('SWING')">📈 Swing Trading (Equity)</button>
+    <button id="btnFno" class="mode-btn" onclick="switchMode('FNO')">⚡ F&O Terminal (Options)</button>
+  </div>
+
+  <div id="sectionBanner" class="section-banner">
+    <strong>📈 Swing Trading विभाग (२ दिवस ते ४ आठवडे होल्डिंग):</strong> येथे शेअर्सचा 20-EMA व 50-EMA ट्रेंड, <strong>Trade Strength (0-100)</strong>, अचूक <strong>Buy/Sell Entry Zone</strong>, Stop Loss आणि Target दिलेले आहेत. चार्ट पाहण्यासाठी कोणत्याही कार्डवरील <strong>View Candlestick Chart</strong> बटणावर क्लिक करा.
+  </div>
+
+  <!-- F&O INDICES & OPTION CHAIN (Shown prominently in F&O Mode) -->
+  <div id="indicesSection" class="indices" style="display:none;">
+    <div class="idx-card">
+      <div class="idx-title"><span>NIFTY 50 (Index Option Chain)</span><span id="niftySent" style="color:#38bdf8"></span></div>
+      <div id="niftyVal" class="idx-val">Loading...</div>
+      <div id="niftyOC" class="oc-strip">Loading Option Chain...</div>
+    </div>
+    <div class="idx-card">
+      <div class="idx-title"><span>BANK NIFTY (Index Option Chain)</span><span id="bnSent" style="color:#38bdf8"></span></div>
+      <div id="bnVal" class="idx-val">Loading...</div>
+      <div id="bnOC" class="oc-strip">Loading Option Chain...</div>
+    </div>
+  </div>
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search any NSE stock to open Candlestick Chart & Option Chain (e.g. RELIANCE, HAL, ZOMATO)..." oninput="onSearchInput(this.value)" />
+    <div id="suggestions" class="suggestions"></div>
+  </div>
+
+  <div class="filters">
+    <button class="tab active" onclick="setFilter('ALL', this)">All Stocks</button>
+    <button class="tab" onclick="setFilter('WATCHLIST', this)">★ My Watchlist (<span id="wlCount">0</span>)</button>
+    <button class="tab" onclick="setFilter('BUY', this)">Bullish / Buy</button>
+    <button class="tab" onclick="setFilter('SELL', this)">Bearish / Sell</button>
+  </div>
+
+  <div id="statusMsg" class="status">Loading live NSE data...</div>
+  <div id="cardsGrid" class="grid"></div>
+
+  <!-- Candlestick Chart & Option Chain Modal -->
+  <div id="stockModal" class="modal-bg" onclick="if(event.target===this) closeModal()">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h2 id="mTitle" style="font-size:1.15rem;color:#38bdf8">Stock</h2>
+          <div id="mSub" style="font-size:0.78rem;color:#94a3b8"></div>
+        </div>
+        <button class="close-btn" onclick="closeModal()">✕ Close</button>
+      </div>
+      <div id="mOC" class="oc-strip" style="margin-bottom:8px"></div>
+      <div class="legend">
+        <span><strong style="color:#10b981">▮</strong> Bullish Candle</span>
+        <span><strong style="color:#ef4444">▮</strong> Bearish Candle</span>
+        <span><strong style="color:#38bdf8">—</strong> 20-EMA</span>
+        <span><strong style="color:#fbbf24">--</strong> Target</span>
+        <span><strong style="color:#f87171">--</strong> Stop Loss</span>
+      </div>
+      <canvas id="priceChart" width="640" height="240"></canvas>
+      <div id="mZones" class="zones"></div>
+      <div class="calc-box">
+        <div>
+          <strong>Position Size Calculator:</strong> Capital ₹
+          <input type="number" id="capInput" value="25000" oninput="updateCalc()" />
+        </div>
+        <div id="calcResult" style="margin-top:6px;color:#10b981"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allStocks = [];
+    let currentMode = 'SWING'; // 'SWING' or 'FNO'
+    let currentFilter = 'ALL';
+    let watchlist = JSON.parse(localStorage.getItem('marketeye_wl') || '["RELIANCE","TCS","HAL","BHARTIARTL"]');
+    let activeStock = null;
+
+    function switchMode(mode) {
+      currentMode = mode;
+      const btnSwing = document.getElementById('btnSwing');
+      const btnFno = document.getElementById('btnFno');
+      const banner = document.getElementById('sectionBanner');
+      const idxSec = document.getElementById('indicesSection');
+
+      if (mode === 'SWING') {
+        btnSwing.className = 'mode-btn active-swing';
+        btnFno.className = 'mode-btn';
+        idxSec.style.display = 'none';
+        banner.className = 'section-banner';
+        banner.innerHTML = '<strong>📈 Swing Trading विभाग (२ दिवस ते ४ आठवडे होल्डिंग):</strong> येथे शेअर्सचा 20-EMA व 50-EMA ट्रेंड, <strong>Trade Strength (0-100)</strong>, अचूक <strong>Buy/Sell Entry Zone</strong>, Stop Loss आणि Target दिलेले आहेत. चार्ट पाहण्यासाठी कोणत्याही कार्डवरील <strong>📊 View Candlestick Chart</strong> बटणावर क्लिक करा.';
+      } else {
+        btnSwing.className = 'mode-btn';
+        btnFno.className = 'mode-btn active-fno';
+        idxSec.style.display = 'grid';
+        banner.className = 'section-banner fno-theme';
+        banner.innerHTML = '<strong>⚡ F&O Terminal (Options & Derivatives):</strong> वर <strong>Nifty / Bank Nifty Option Chain (PCR, Support, Resistance)</strong> आणि खाली फक्त F&O मधील शेअर्ससाठी सुचवलेले <strong>Call/Put Strike (CE/PE)</strong> आणि Option Chain विश्लेषणाचा डेटा दाखवला आहे.';
+      }
+      renderCards(allStocks);
+    }
+
+    function updateWlCount() {
+      document.getElementById('wlCount').textContent = watchlist.length;
+    }
+
+    function toggleWatchlist(e, sym) {
+      e.stopPropagation();
+      watchlist = watchlist.includes(sym) ? watchlist.filter(s => s !== sym) : [...watchlist, sym];
+      localStorage.setItem('marketeye_wl', JSON.stringify(watchlist));
+      updateWlCount();
+      renderCards(allStocks);
+    }
+
+    function formatIdx(valId, ocId, sentId, obj) {
+      const el = document.getElementById(valId);
+      const ocEl = document.getElementById(ocId);
+      const sentEl = document.getElementById(sentId);
+      if (!obj || !obj.price) {
+        el.innerHTML = '<span style="color:#94a3b8">Market Closed</span>';
+        ocEl.textContent = 'Option Chain unavailable';
+        return;
+      }
+      const cls = obj.change_pct >= 0 ? 'pos' : 'neg';
+      const sign = obj.change_pct >= 0 ? '+' : '';
+      el.innerHTML = `₹${obj.price.toLocaleString('en-IN')} <span class="${cls}" style="font-size:0.9rem">(${sign}${obj.change_pct}%)</span>`;
+      const oc = obj.option_chain || {};
+      sentEl.textContent = oc.sentiment || '';
+      ocEl.innerHTML = `
+        <span class="oc-tag">PCR: <strong>${oc.pcr || '-'}</strong></span>
+        <span class="oc-tag">Support (Put OI): <strong style="color:#10b981">${oc.support || '-'}</strong></span>
+        <span class="oc-tag">Resistance (Call OI): <strong style="color:#ef4444">${oc.resistance || '-'}</strong></span>
+      `;
+    }
+
+    function renderCards(list) {
+      const grid = document.getElementById('cardsGrid');
+      const status = document.getElementById('statusMsg');
+
+      let filtered = currentMode === 'FNO' ? list.filter(s => s.is_fno) : list;
+      if (currentFilter === 'BUY') filtered = filtered.filter(s => s.side === 'BUY');
+      if (currentFilter === 'SELL') filtered = filtered.filter(s => s.side === 'SELL');
+      if (currentFilter === 'WATCHLIST') filtered = filtered.filter(s => watchlist.includes(s.symbol));
+
+      if (!filtered.length) {
+        status.textContent = currentFilter === 'WATCHLIST'
+          ? 'Your Watchlist is empty. Click ★ on any stock card to save it here.'
+          : 'No stocks found for this filter.';
+        grid.innerHTML = '';
+        return;
+      }
+      status.textContent = currentMode === 'SWING'
+        ? `Swing Trading: Showing ${filtered.length} NSE Stocks`
+        : `F&O Terminal: Showing ${filtered.length} Derivatives Stocks`;
+
+      grid.innerHTML = filtered.map(s => {
+        const isBuy = s.side === 'BUY';
+        const chgCls = s.change_pct >= 0 ? 'pos' : 'neg';
+        const sign = s.change_pct >= 0 ? '+' : '';
+        const isSaved = watchlist.includes(s.symbol);
+
+        const bodyHtml = currentMode === 'SWING' ? `
+          <div class="strength-box">
+            <div class="strength-top">
+              <span>Trade Strength: ${s.strength_score}/100 (${s.strength_label})</span>
+            </div>
+            <div class="strength-sub">${s.strength_detail}</div>
+          </div>
+          <div class="ai-note">${s.swing_note}</div>
+          <div class="zones">
+            <div><strong style="color:#10b981">Buy Zone:</strong> ${s.trade_zones.buy_zone} | SL: ₹${s.trade_zones.buy_sl} | Tgt: ₹${s.trade_zones.buy_target}</div>
+            <div><strong style="color:#ef4444">Sell Zone:</strong> ${s.trade_zones.sell_zone} | SL: ₹${s.trade_zones.sell_sl} | Tgt: ₹${s.trade_zones.sell_target}</div>
+          </div>
+          <div class="pillars">
+            <span class="pill">20-EMA: ₹${s.ema20}</span>
+            <span class="pill">50-EMA: ₹${s.ema50}</span>
+            <span class="pill">RSI: ${s.rsi}</span>
+            <span class="pill">Vol: ${s.volume_spike}</span>
+          </div>
+        ` : `
+          <div class="strength-box">
+            <div class="strength-top">
+              <span style="color:#38bdf8">${s.fno_strike}</span>
+              <span>${s.fno_bias}</span>
+            </div>
+            <div class="strength-sub">Option Chain Support: ₹${s.support} | Resistance: ₹${s.resistance}</div>
+          </div>
+          <div class="zones">
+            <div><strong style="color:#10b981">Spot Support (Put Zone):</strong> ₹${s.support}</div>
+            <div><strong style="color:#ef4444">Spot Resistance (Call Zone):</strong> ₹${s.resistance}</div>
+            <div><strong style="color:#fbbf24">Active Stop Loss:</strong> ₹${s.stop_loss} | <strong>Target:</strong> ₹${s.target}</div>
+          </div>
+          <div class="pillars">
+            <span class="pill">RSI: ${s.rsi}</span>
+            <span class="pill">Vol Spike: ${s.volume_spike}</span>
+            <span class="pill">Strength: ${s.strength_score}/100</span>
+          </div>
+        `;
+
+        return `
+          <div class="card" onclick="openStockModal('${s.symbol}')">
+            <div class="card-top">
+              <div>
+                <div class="sym-row">
+                  <button class="star-btn ${isSaved ? 'saved' : ''}" onclick="toggleWatchlist(event, '${s.symbol}')">★</button>
+                  <span class="sym">${s.symbol}</span>
+                </div>
+                <div class="cname">${s.name}</div>
+              </div>
+              <span class="badge ${isBuy ? 'buy' : 'sell'}">${s.signal}</span>
+            </div>
+            <div class="price-row">
+              <div class="price">₹${s.price} <span class="${chgCls}" style="font-size:0.9rem">(${sign}${s.change_pct}%)</span></div>
+            </div>
+            ${bodyHtml}
+            <div class="card-foot">
+              <button class="chart-btn" onclick="event.stopPropagation(); openStockModal('${s.symbol}')">📊 View Candlestick Chart & Option Chain</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setFilter(type, btn) {
+      currentFilter = type;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      renderCards(allStocks);
+    }
+
+    async function loadDashboard() {
+      const btn = document.getElementById('refreshBtn');
+      const status = document.getElementById('statusMsg');
+      btn.disabled = true;
+      btn.textContent = 'Loading...';
+      status.textContent = 'Fetching live NSE prices & Option Chain...';
+      updateWlCount();
+
+      const mergedSyms = Array.from(new Set([...watchlist, "BHARTIARTL", "RELIANCE", "TCS", "HDFCBANK", "INFY", "SBIN", "TATAMOTORS", "TATASTEEL", "ZOMATO", "IRCTC", "HAL", "BEL", "ITC", "AXISBANK", "WIPRO", "IDEA", "YESBANK", "SUZLON"]));
+
+      try {
+        const [idxRes, sigRes] = await Promise.all([
+          fetch('/indices').then(r => r.json()),
+          fetch(`/signals?symbols=${mergedSyms.join(',')}`).then(r => r.json())
+        ]);
+        formatIdx('niftyVal', 'niftyOC', 'niftySent', idxRes.nifty);
+        formatIdx('bnVal', 'bnOC', 'bnSent', idxRes.banknifty);
+        allStocks = sigRes.stocks || [];
+        renderCards(allStocks);
+        document.getElementById('lastUpdated').textContent = 'Last Updated: ' + new Date().toLocaleTimeString('en-IN');
+      } catch (err) {
+        status.textContent = 'Server waking up... Please click Refresh once.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Refresh';
+      }
+    }
+
+    let searchTimer;
+    function onSearchInput(val) {
+      clearTimeout(searchTimer);
+      const box = document.getElementById('suggestions');
+      if (!val.trim()) { box.innerHTML = ''; return; }
+      searchTimer = setTimeout(async () => {
+        const res = await fetch(`/suggest/${encodeURIComponent(val.trim())}`).then(r => r.json());
+        box.innerHTML = (res.suggestions || []).map(item =>
+          `<div class="sug-item" onclick="selectStock('${item.symbol}')"><strong>${item.symbol}</strong> - ${item.name}</div>`
+        ).join('');
+      }, 250);
+    }
+
+    function selectStock(sym) {
+      document.getElementById('suggestions').innerHTML = '';
+      document.getElementById('searchInput').value = sym;
+      openStockModal(sym);
+    }
+
+    async function openStockModal(sym) {
+      const modal = document.getElementById('stockModal');
+      modal.classList.add('open');
+      document.getElementById('mTitle').textContent = `${sym} — Loading Candlestick Chart...`;
+      document.getElementById('mSub').textContent = '';
+      document.getElementById('mOC').textContent = 'Fetching Option Chain & 45-Day Candles...';
+
+      const res = await fetch(`/search/${sym}`).then(r => r.json());
+      if (!res.stock) {
+        document.getElementById('mTitle').textContent = res.error || 'Error loading stock';
+        return;
+      }
+      const s = res.stock;
+      activeStock = s;
+      document.getElementById('mTitle').textContent = `${s.symbol} — ₹${s.price} (${s.signal})`;
+      document.getElementById('mSub').textContent = `${s.name} | Trade Strength: ${s.strength_score}/100 (${s.strength_label})`;
+
+      const oc = s.option_chain || {};
+      document.getElementById('mOC').innerHTML = `
+        <span class="oc-tag">Option PCR: <strong>${oc.pcr || '-'}</strong></span>
+        <span class="oc-tag">Sentiment: <strong>${oc.sentiment || '-'}</strong></span>
+        <span class="oc-tag">Support: <strong style="color:#10b981">₹${oc.support || '-'}</strong></span>
+        <span class="oc-tag">Resistance: <strong style="color:#ef4444">₹${oc.resistance || '-'}</strong></span>
+      `;
+
+      document.getElementById('mZones').innerHTML = `
+        <div><strong style="color:#10b981">Buy Zone:</strong> ${s.trade_zones.buy_zone} | <strong>SL:</strong> ₹${s.trade_zones.buy_sl} | <strong>Target:</strong> ₹${s.trade_zones.buy_target}</div>
+        <div><strong style="color:#ef4444">Sell Zone:</strong> ${s.trade_zones.sell_zone} | <strong>SL:</strong> ₹${s.trade_zones.sell_sl} | <strong>Target:</strong> ₹${s.trade_zones.sell_target}</div>
+      `;
+
+      drawCandlestickChart(s);
+      updateCalc();
+    }
+
+    function closeModal() {
+      document.getElementById('stockModal').classList.remove('open');
+    }
+
+    function updateCalc() {
+      if (!activeStock) return;
+      const cap = parseFloat(document.getElementById('capInput').value) || 0;
+      const qty = Math.floor(cap / activeStock.price);
+      const riskPerShare = Math.abs(activeStock.price - activeStock.stop_loss);
+      const rewardPerShare = Math.abs(activeStock.target - activeStock.price);
+      const rr = riskPerShare > 0 ? (rewardPerShare / riskPerShare).toFixed(2) : '2.0';
+      document.getElementById('calcResult').textContent =
+        `Buy Qty: ${qty} shares | Max Risk: ₹${Math.round(qty * riskPerShare)} | Est. Profit at Target: ₹${Math.round(qty * rewardPerShare)} (R:R 1:${rr})`;
+    }
+
+    function drawCandlestickChart(s) {
+      const canvas = document.getElementById('priceChart');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const chart = s.chart;
+      if (!chart || !chart.candles || !chart.candles.length) return;
+
+      const candles = chart.candles;
+      const emas = chart.ema20;
+      const highs = candles.map(c => c.high);
+      const lows = candles.map(c => c.low);
+      const minV = Math.min(...lows, s.stop_loss) * 0.992;
+      const maxV = Math.max(...highs, s.target) * 1.008;
+
+      const padL = 16, padR = 54, padT = 16, padB = 22;
+      const w = canvas.width - padL - padR;
+      const h = canvas.height - padT - padB;
+      const getX = i => padL + ((i + 0.5) / candles.length) * w;
+      const getY = v => padT + h - ((v - minV) / (maxV - minV || 1)) * h;
+
+      ctx.strokeStyle = '#1e293b';
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px sans-serif';
+      for (let g = 0; g <= 4; g++) {
+        const y = padT + (h / 4) * g;
+        const val = (maxV - ((maxV - minV) / 4) * g).toFixed(0);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(canvas.width - padR, y); ctx.stroke();
+        ctx.fillText('₹' + val, canvas.width - padR + 4, y + 3);
+      }
+
+      const drawLevel = (price, color, label) => {
+        const y = getY(price);
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(canvas.width - padR, y); ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.fillText(`${label} ₹${price}`, padL + 4, y - 3);
+        ctx.restore();
+      };
+      drawLevel(s.target, '#fbbf24', 'TGT');
+      drawLevel(s.stop_loss, '#f87171', 'SL');
+
+      const candleW = Math.max(4, (w / candles.length) * 0.6);
+      candles.forEach((c, i) => {
+        const x = getX(i);
+        const isUp = c.close >= c.open;
+        ctx.strokeStyle = isUp ? '#10b981' : '#ef4444';
+        ctx.fillStyle = isUp ? '#10b981' : '#ef4444';
+        ctx.beginPath();
+        ctx.moveTo(x, getY(c.high));
+        ctx.lineTo(x, getY(c.low));
+        ctx.stroke();
+
+        const top = getY(Math.max(c.open, c.close));
+        const bot = getY(Math.min(c.open, c.close));
+        ctx.fillRect(x - candleW / 2, top, candleW, Math.max(2, bot - top));
+      });
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      emas.forEach((v, i) => i === 0 ? ctx.moveTo(getX(i), getY(v)) : ctx.lineTo(getX(i), getY(v)));
+      ctx.stroke();
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>
