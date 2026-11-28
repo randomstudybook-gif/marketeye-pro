@@ -1,646 +1,796 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="mr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MarketEye Pro</title>
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#0b0f19" />
+  <title>MarketEye Pro — Live Trailing SL & Demat Terminal</title>
   <style>
     :root {
       --bg: #0b0f19;
       --card: #131a2a;
-      --border: #1e293b;
-      --text: #f1f5f9;
+      --card-hover: #172033;
+      --border: #222e46;
+      --text: #e2e8f0;
       --muted: #94a3b8;
+      --accent: #38bdf8;
       --green: #10b981;
       --red: #ef4444;
-      --accent: #3b82f6;
-      --gold: #fbbf24;
+      --amber: #f59e0b;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-    body { background: var(--bg); color: var(--text); padding: 14px; max-width: 1150px; margin: auto; }
-    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-    .title-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    h1 { font-size: 1.3rem; color: #38bdf8; }
-    .mkt-badge { font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; }
-    .mkt-open { background: rgba(16,185,129,0.18); color: #10b981; border: 1px solid rgba(16,185,129,0.4); }
-    .mkt-closed { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.35); }
-    .sub-head { font-size: 0.74rem; color: var(--muted); margin-top: 3px; }
-    .controls { display: flex; gap: 8px; align-items: center; }
-    select, .btn { background: #1e293b; color: #fff; border: 1px solid #334155; padding: 7px 11px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.84rem; }
-    .btn-primary { background: var(--accent); border-color: var(--accent); }
-    .btn:disabled { opacity: 0.6; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 16px; max-width: 1460px; margin: 0 auto; }
 
-    /* Two Distinct Main Sections */
-    .mode-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; background: #0f172a; padding: 6px; border-radius: 12px; border: 1px solid var(--border); }
-    .mode-btn { padding: 11px; border-radius: 9px; border: none; background: transparent; color: var(--muted); font-size: 0.92rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
-    .mode-btn.active-swing { background: #10b981; color: #052e16; }
-    .mode-btn.active-fno { background: #3b82f6; color: #ffffff; }
+    .topbar {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--border); margin-bottom: 14px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand h1 { font-size: 1.35rem; font-weight: 700; color: #fff; }
+    .live-dot {
+      display: inline-flex; align-items: center; gap: 6px; font-size: 0.76rem; font-weight: 700;
+      background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 4px 10px; border-radius: 999px;
+    }
+    .pulse-circle {
+      width: 8px; height: 8px; background: var(--green); border-radius: 50%;
+      animation: blink 0.8s infinite alternate;
+    }
+    @keyframes blink { from { opacity: 0.3; } to { opacity: 1; } }
 
-    .section-banner { background: #0f172a; border-left: 4px solid #10b981; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; font-size: 0.82rem; color: #cbd5e1; line-height: 1.5; }
-    .section-banner.fno-theme { border-left-color: #3b82f6; }
+    .indices-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 10px; margin-bottom: 16px;
+    }
+    .idx-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .idx-title { font-size: 0.74rem; color: var(--muted); font-weight: 600; }
+    .idx-val { font-size: 1.1rem; font-weight: 700; margin-top: 2px; }
+    .up { color: var(--green); }
+    .down { color: var(--red); }
 
-    .indices { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin-bottom: 14px; }
-    .idx-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
-    .idx-title { font-size: 0.82rem; color: var(--muted); display: flex; justify-content: space-between; font-weight: 600; }
-    .idx-val { font-size: 1.25rem; font-weight: 700; margin: 4px 0 8px; }
-    .oc-strip { background: #0f172a; border-radius: 7px; padding: 8px; font-size: 0.78rem; display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; border: 1px solid #1e293b; }
-    .oc-tag { color: #cbd5e1; }
-    .oc-tag strong { color: #38bdf8; }
-    .src-badge { font-size: 0.68rem; background: #1e293b; color: #94a3b8; padding: 2px 6px; border-radius: 4px; }
+    @keyframes flashGreen { 0% { background-color: rgba(16, 185, 129, 0.35); } 100% { background-color: transparent; } }
+    @keyframes flashRed { 0% { background-color: rgba(239, 68, 68, 0.35); } 100% { background-color: transparent; } }
+    .tick-up { animation: flashGreen 0.5s ease-out; border-radius: 4px; padding: 0 3px; }
+    .tick-down { animation: flashRed 0.5s ease-out; border-radius: 4px; padding: 0 3px; }
 
-    .search-box { position: relative; margin-bottom: 14px; }
-    .search-box input { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.95rem; outline: none; }
-    .suggestions { position: absolute; width: 100%; background: #1e293b; border-radius: 8px; margin-top: 4px; z-index: 30; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-    .sug-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #334155; font-size: 0.9rem; }
-    .sug-item:hover { background: #334155; }
+    .broker-drawer {
+      display: none; background: #101726; border: 1px solid var(--accent); border-radius: 12px;
+      padding: 16px; margin-bottom: 16px;
+    }
+    .broker-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 10px;
+    }
+    .field-group { display: flex; flex-direction: column; gap: 5px; }
+    .field-group label { font-size: 0.74rem; color: var(--muted); font-weight: 600; }
+    .field-group input, .field-group select {
+      background: #0b101d; border: 1px solid var(--border); color: #fff;
+      padding: 8px 10px; border-radius: 8px; font-size: 0.85rem;
+    }
 
-    .filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
-    .tab { background: var(--card); color: var(--muted); border: 1px solid var(--border); padding: 7px 13px; border-radius: 20px; cursor: pointer; font-size: 0.84rem; }
-    .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .status { text-align: center; color: #38bdf8; padding: 10px; font-size: 0.88rem; background: rgba(56,189,248,0.06); border-radius: 8px; margin-bottom: 12px; }
+    .segment-bar {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      gap: 12px; margin-bottom: 14px; background: var(--card); padding: 12px;
+      border-radius: 12px; border: 1px solid var(--border);
+    }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tab-btn {
+      background: transparent; color: var(--muted); border: 1px solid var(--border);
+      padding: 9px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+    }
+    .tab-btn.active { background: var(--accent); color: #05131f; border-color: var(--accent); }
 
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(315px, 1fr)); gap: 12px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; transition: 0.15s; }
-    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
-    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-    .sym-row { display: flex; align-items: center; gap: 8px; }
-    .sym { font-size: 1.1rem; font-weight: 700; }
-    .star-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; line-height: 1; }
-    .star-btn.saved { color: var(--gold); }
-    .cname { font-size: 0.78rem; color: var(--muted); }
-    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
-    .buy { background: rgba(16,185,129,0.18); color: var(--green); }
-    .sell { background: rgba(239,68,68,0.18); color: var(--red); }
-    .price-row { display: flex; justify-content: space-between; align-items: baseline; margin: 8px 0; }
-    .price { font-size: 1.3rem; font-weight: 700; }
-    .pos { color: var(--green); }
-    .neg { color: var(--red); }
+    .search-wrapper { position: relative; display: flex; gap: 6px; }
+    .search-wrapper input {
+      background: #0f1524; border: 1px solid var(--border); color: #fff;
+      padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; width: 230px;
+    }
+    .ac-dropdown {
+      position: absolute; top: 105%; left: 0; width: 290px; max-height: 260px; overflow-y: auto;
+      background: #131a2a; border: 1px solid #36496e; border-radius: 8px; z-index: 999;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6); display: none;
+    }
+    .ac-item {
+      padding: 9px 12px; cursor: pointer; border-bottom: 1px solid #1e293b;
+      display: flex; justify-content: space-between; align-items: center; font-size: 0.83rem;
+    }
+    .ac-item:hover { background: #1e293b; }
+    .ac-sym { font-weight: 700; color: var(--accent); }
+    .ac-name { color: var(--muted); font-size: 0.74rem; max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .strength-box { background: #1e293b; padding: 7px 9px; border-radius: 7px; margin-bottom: 8px; }
-    .strength-top { display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 700; color: var(--gold); }
-    .strength-sub { font-size: 0.72rem; color: #cbd5e1; margin-top: 3px; line-height: 1.4; }
+    .btn {
+      background: #1e293b; color: #fff; border: 1px solid var(--border);
+      padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.84rem; font-weight: 600;
+    }
+    .btn:hover { background: #293548; }
+    .btn-primary { background: var(--accent); color: #04121d; border: none; }
+    .btn-buy { background: var(--green); color: #04130d; border: none; font-weight: 700; }
+    .btn-sell { background: var(--red); color: #fff; border: none; font-weight: 700; }
 
-    .ai-note { font-size: 0.78rem; color: #e2e8f0; background: rgba(56,189,248,0.08); border-left: 3px solid #38bdf8; padding: 7px 9px; border-radius: 4px; margin-bottom: 8px; line-height: 1.45; }
-    .active-zone { background: #0f172a; border-radius: 8px; padding: 10px; font-size: 0.84rem; margin: 8px 0; line-height: 1.65; border-left: 3px solid var(--green); }
-    .active-zone.sell-zone { border-left-color: var(--red); }
+    .filter-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: center; }
+    .pill {
+      background: var(--card); border: 1px solid var(--border); color: var(--muted);
+      padding: 6px 14px; border-radius: 999px; font-size: 0.82rem; cursor: pointer; font-weight: 600;
+    }
+    .pill.active { border-color: var(--accent); color: #fff; background: rgba(56, 189, 248, 0.14); }
 
-    .pillars { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; font-size: 0.75rem; }
-    .pill { background: #1e293b; padding: 3px 7px; border-radius: 5px; color: #cbd5e1; }
+    .cards-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(370px, 1fr));
+      gap: 14px; margin-bottom: 28px;
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 15px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .card:hover { border-color: #36496e; background: var(--card-hover); }
+    .card-head { display: flex; justify-content: space-between; align-items: flex-start; }
+    .sym { font-size: 1.12rem; font-weight: 700; color: #fff; }
+    .sub-name { font-size: 0.76rem; color: var(--muted); }
+    .price-box { text-align: right; }
+    .price { font-size: 1.14rem; font-weight: 700; }
 
-    .card-foot { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
-    .chart-btn { background: #2563eb; color: #fff; border: none; padding: 8px 12px; border-radius: 7px; font-size: 0.82rem; font-weight: 600; cursor: pointer; width: 100%; }
+    .tag {
+      font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+      background: #1e293b; color: #cbd5e1; display: inline-block;
+    }
+    .tag-buy { background: rgba(16, 185, 129, 0.16); color: var(--green); }
+    .tag-sell { background: rgba(239, 68, 68, 0.16); color: var(--red); }
+    .tag-tsl { background: rgba(245, 158, 11, 0.18); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.35); }
 
-    footer { margin-top: 24px; padding: 12px; border-top: 1px solid var(--border); font-size: 0.76rem; color: var(--muted); text-align: center; line-height: 1.5; background: #0f172a; border-radius: 8px; }
+    .calc-box {
+      background: #0d1320; border: 1px solid #1e2c47; border-radius: 10px;
+      padding: 10px; display: flex; flex-direction: column; gap: 9px;
+    }
+    .calc-inputs {
+      display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 8px;
+    }
+    .mini-field { display: flex; flex-direction: column; gap: 3px; }
+    .mini-field label { font-size: 0.68rem; color: var(--muted); font-weight: 600; }
+    .mini-field input, .mini-field select {
+      background: #141d30; border: 1px solid #283858; color: #fff;
+      padding: 6px 8px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; width: 100%;
+    }
 
-    /* Modal */
-    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 50; justify-content: center; align-items: center; padding: 12px; }
-    .modal-bg.open { display: flex; }
-    .modal { background: #111827; border: 1px solid #334155; border-radius: 14px; max-width: 680px; width: 100%; max-height: 92vh; overflow-y: auto; padding: 16px; }
-    .modal-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 10px; margin-bottom: 10px; }
-    .close-btn { background: #1e293b; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 700; }
-    .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.75rem; color: #cbd5e1; margin: 6px 0; }
-    canvas { width: 100%; height: 240px; background: #0b0f19; border-radius: 8px; border: 1px solid #1e293b; }
-    .calc-box { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 0.85rem; }
-    .calc-box input { background: #1e293b; border: 1px solid #334155; color: #fff; padding: 5px 8px; border-radius: 6px; width: 110px; margin-left: 6px; }
+    /* Optional Trailing Stop-Loss Row */
+    .tsl-row {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+      background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25);
+      padding: 6px 9px; border-radius: 7px; font-size: 0.78rem;
+    }
+    .tsl-check { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; color: #fde68a; }
+    .tsl-check input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--amber); cursor: pointer; }
+    .tsl-row select {
+      background: #141d30; border: 1px solid #4b3d1e; color: #fde68a;
+      padding: 4px 7px; border-radius: 5px; font-size: 0.78rem; font-weight: 700;
+    }
+    .tsl-row select:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .levels-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+      padding-top: 6px; border-top: 1px solid #1b2538; font-size: 0.8rem;
+    }
+    .lvl-label { color: var(--muted); font-size: 0.68rem; }
+    .lvl-val { font-weight: 700; margin-top: 2px; }
+
+    .qty-summary {
+      display: flex; justify-content: space-between; font-size: 0.76rem;
+      background: rgba(56, 189, 248, 0.08); padding: 6px 8px; border-radius: 6px;
+    }
+
+    .manual-row { display: none; margin-top: 2px; }
+    .manual-row input {
+      width: 100%; background: #141d30; border: 1px solid #36496e; color: #fff;
+      padding: 6px 8px; border-radius: 6px; font-size: 0.8rem;
+    }
+
+    .exec-row {
+      display: grid; grid-template-columns: 1.35fr 1fr; gap: 8px; align-items: center; margin-top: 2px;
+    }
+    .exec-row select {
+      background: #0d1320; border: 1px solid #2c3e61; color: #fff;
+      padding: 8px; border-radius: 8px; font-size: 0.79rem; font-weight: 600;
+    }
+
+    .trade-book {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px; margin-top: 12px;
+    }
+    .trade-book-head {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      gap: 10px; margin-bottom: 12px;
+    }
+    .total-pnl-box {
+      background: #0d1320; border: 1px solid var(--border); padding: 6px 14px;
+      border-radius: 8px; font-size: 0.9rem; font-weight: 700;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; font-size: 0.75rem; }
+    .empty-msg { color: var(--muted); text-align: center; padding: 24px; font-size: 0.9rem; }
   </style>
 </head>
 <body>
-  <header>
-    <div>
-      <div class="title-wrap">
-        <h1>MarketEye Pro</h1>
-        <span id="mktStatusBadge" class="mkt-badge mkt-closed">Checking Market...</span>
-      </div>
-      <div id="lastUpdated" class="sub-head">Auto-Refresh: 5m (Swing) | 60s (F&O)</div>
-    </div>
-    <div class="controls">
-      <select id="langSelect" onchange="changeLang(this.value)" title="Select Language">
-        <option value="mr">मराठी</option>
-        <option value="hi">हिंदी</option>
-        <option value="en">English</option>
-      </select>
-      <button id="refreshBtn" class="btn btn-primary" onclick="loadDashboard()">Refresh</button>
-    </div>
-  </header>
 
-  <!-- TWO DISTINCT MAIN SECTIONS -->
-  <div class="mode-bar">
-    <button id="btnSwing" class="mode-btn active-swing" onclick="switchMode('SWING')">📈 स्विंग ट्रेडिंग (Equity)</button>
-    <button id="btnFno" class="mode-btn" onclick="switchMode('FNO')">⚡ F&O टर्मिनल (Options)</button>
-  </div>
-
-  <div id="sectionBanner" class="section-banner"></div>
-
-  <!-- INDICES & OPTION CHAIN (ALWAYS VISIBLE) -->
-  <div id="indicesSection" class="indices">
-    <div class="idx-card">
-      <div class="idx-title"><span>NIFTY 50 (Option Chain)</span><span id="niftySent" style="color:#38bdf8"></span></div>
-      <div id="niftyVal" class="idx-val">NIFTY 50</div>
-      <div id="niftyOC" class="oc-strip"><span class="oc-tag">PCR: <strong>-</strong></span><span class="oc-tag">Support: <strong style="color:#10b981">-</strong></span><span class="oc-tag">Resistance: <strong style="color:#ef4444">-</strong></span><span class="src-badge">NSE / Index Feed</span></div>
+  <div class="topbar">
+    <div class="brand">
+      <h1>📊 MarketEye Pro</h1>
+      <span class="live-dot"><span class="pulse-circle"></span> LIVE 0.7s TICK</span>
     </div>
-    <div class="idx-card">
-      <div class="idx-title"><span>BANK NIFTY (Option Chain)</span><span id="bnSent" style="color:#38bdf8"></span></div>
-      <div id="bnVal" class="idx-val">BANK NIFTY</div>
-      <div id="bnOC" class="oc-strip"><span class="oc-tag">PCR: <strong>-</strong></span><span class="oc-tag">Support: <strong style="color:#10b981">-</strong></span><span class="oc-tag">Resistance: <strong style="color:#ef4444">-</strong></span><span class="src-badge">NSE / Index Feed</span></div>
-    </div>
-    <div class="idx-card">
-      <div class="idx-title"><span>NIFTY 250 / NIFTY 500</span><span style="color:#38bdf8">Broad Market</span></div>
-      <div id="broadVal" class="idx-val">NIFTY 250 & 500</div>
-      <div id="broadOC" class="oc-strip"><span class="oc-tag">Indices: <strong>NIFTY 50 · NIFTY 250 · NIFTY 500</strong></span><span class="src-badge">Market Breadth</span></div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn" onclick="toggleBrokerDrawer()" style="border-color:var(--accent); color:var(--accent);">🔗 Demat Account Link (Upstox / Zerodha)</button>
+      <span id="lastUpdated" style="font-size:0.78rem; color:var(--muted);">--:--:--</span>
+      <button class="btn" onclick="refreshAll()">⚡ Refresh</button>
     </div>
   </div>
 
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search NSE stock for Candlestick Chart & Option Chain (e.g. RELIANCE, HAL, ZOMATO)..." oninput="onSearchInput(this.value)" />
-    <div id="suggestions" class="suggestions"></div>
+  <!-- Upstox & Zerodha Demat Link Drawer -->
+  <div id="brokerDrawer" class="broker-drawer">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="font-size:1rem; color:#fff;">🔐 Direct Demat Account Link (Upstox & Zerodha)</h3>
+      <button class="btn" onclick="toggleBrokerDrawer()" style="padding:4px 10px;">✕ बंद करा</button>
+    </div>
+    <div class="broker-grid">
+      <div class="field-group">
+        <label>Default Demat Account निवडा</label>
+        <select id="defaultBrokerSelect">
+          <option value="UPSTOX">🟦 Upstox Demat (Free API)</option>
+          <option value="ZERODHA">🟧 Zerodha Kite Demat</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>🟦 Upstox Access Token</label>
+        <input type="password" id="upstoxTokenInput" placeholder="Upstox Token पेस्ट करा..." />
+      </div>
+      <div class="field-group">
+        <label>🟧 Zerodha API Key</label>
+        <input type="text" id="zerodhaKeyInput" placeholder="Kite API Key..." />
+      </div>
+      <div class="field-group">
+        <label>🟧 Zerodha Access Token</label>
+        <input type="password" id="zerodhaTokenInput" placeholder="Kite Access Token..." />
+      </div>
+    </div>
+    <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
+      <button class="btn btn-primary" onclick="saveBrokerCredentials()">💾 Demat Keys सेव्ह करा</button>
+      <span id="brokerSaveStatus" style="font-size:0.8rem; color:var(--green);"></span>
+    </div>
   </div>
 
-  <div class="filters">
-    <button class="tab active" onclick="setFilter('ALL', this)" id="tabAll">All Stocks</button>
-    <button class="tab" onclick="setFilter('WATCHLIST', this)">★ Watchlist (<span id="wlCount">0</span>)</button>
-    <button class="tab" onclick="setFilter('BUY', this)" id="tabBuy">Buy Zone</button>
-    <button class="tab" onclick="setFilter('SELL', this)" id="tabSell">Sell Zone</button>
+  <!-- Live Indices Strip -->
+  <div class="indices-grid" id="indicesStrip">
+    <div class="idx-card"><div><div class="idx-title">NIFTY 50</div><div class="idx-val" id="idx_nifty">--</div></div><div id="idx_nifty_chg">--</div></div>
+    <div class="idx-card"><div><div class="idx-title">BANK NIFTY</div><div class="idx-val" id="idx_banknifty">--</div></div><div id="idx_banknifty_chg">--</div></div>
+    <div class="idx-card"><div><div class="idx-title">US DOLLAR (DXY)</div><div class="idx-val" id="idx_dxy">--</div></div><div id="idx_dxy_chg">--</div></div>
+    <div class="idx-card"><div><div class="idx-title">GOLD ($)</div><div class="idx-val" id="idx_gold">--</div></div><div id="idx_gold_chg">--</div></div>
   </div>
 
-  <div id="statusMsg" class="status">⏳ NSE सर्व्हरवरून ताजा डेटा आणत आहोत, कृपया १५–३० सेकंद प्रतीक्षा करा...</div>
-  <div id="cardsGrid" class="grid"></div>
+  <!-- Segment Tabs + Search -->
+  <div class="segment-bar">
+    <div class="tabs">
+      <button class="tab-btn active" data-seg="swing" onclick="switchSegment('swing')">📈 Swing (Monday Plan)</button>
+      <button class="tab-btn" data-seg="commodity" onclick="switchSegment('commodity')">🪙 Commodity (Daily)</button>
+      <button class="tab-btn" data-seg="forex" onclick="switchSegment('forex')">💱 Forex (Daily)</button>
+    </div>
 
-  <footer id="disclaimerFooter"></footer>
+    <div class="search-wrapper">
+      <input
+        type="text"
+        id="searchInput"
+        autocomplete="off"
+        placeholder="स्टॉक शोधा (उदा. TATA, INFY, GOLD)"
+        oninput="handleSearchInput()"
+        onfocus="handleSearchInput()"
+        onkeydown="if(event.key==='Enter') searchCustom()"
+      />
+      <button class="btn btn-primary" onclick="searchCustom()">शोधा</button>
+      <div id="acDropdown" class="ac-dropdown"></div>
+    </div>
+  </div>
 
-  <!-- Candlestick Chart & Option Chain Modal -->
-  <div id="stockModal" class="modal-bg" onclick="if(event.target===this) closeModal()">
-    <div class="modal">
-      <div class="modal-head">
-        <div>
-          <h2 id="mTitle" style="font-size:1.15rem;color:#38bdf8">Stock</h2>
-          <div id="mSub" style="font-size:0.78rem;color:#94a3b8"></div>
-        </div>
-        <button class="close-btn" onclick="closeModal()">✕</button>
+  <div class="filter-row">
+    <button class="pill active" data-filter="ALL" onclick="setFilter('ALL')">सर्व स्टॉक्स</button>
+    <button class="pill" data-filter="BUY" onclick="setFilter('BUY')">🟢 फक्त BUY Side</button>
+    <button class="pill" data-filter="SELL" onclick="setFilter('SELL')">🔴 फक्त SELL Side</button>
+  </div>
+
+  <div class="cards-grid" id="cardsGrid">
+    <div class="empty-msg">⚡ डेटा लोड होत आहे...</div>
+  </div>
+
+  <!-- Live Chasing Profit & Loss Order Book -->
+  <div class="trade-book">
+    <div class="trade-book-head">
+      <div>
+        <h2 style="font-size:1.05rem;">📈 Live Profit & Loss Book (Paper Study & Direct Demat Orders)</h2>
+        <span style="font-size:0.75rem; color:var(--muted);">ज्या ट्रेडला Trailing Stop-Loss टिक केला असेल, तिथे किंमत नफ्यात जाताच Stop-Loss पुढे सरकत राहील.</span>
       </div>
-      <div id="mOC" class="oc-strip" style="margin-bottom:8px"></div>
-      <div class="legend">
-        <span><strong style="color:#10b981">▮</strong> Bullish</span>
-        <span><strong style="color:#ef4444">▮</strong> Bearish</span>
-        <span><strong style="color:#38bdf8">—</strong> 20-EMA</span>
-        <span><strong style="color:#fbbf24">--</strong> Target</span>
-        <span><strong style="color:#f87171">--</strong> Stop Loss</span>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div class="total-pnl-box">Total Live P&L: <span id="totalLivePnl" class="up">0.00</span></div>
+        <span id="openTradeCount" style="font-size:0.82rem; color:var(--accent);">0 Active</span>
       </div>
-      <canvas id="priceChart" width="640" height="240"></canvas>
-      <div id="mZones" class="active-zone"></div>
-      <div class="calc-box">
-        <div>
-          <strong id="calcLabel">Position Size Calculator:</strong> ₹
-          <input type="number" id="capInput" value="25000" oninput="updateCalc()" />
-        </div>
-        <div id="calcResult" style="margin-top:6px;color:#10b981"></div>
-      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>मोड</th>
+            <th>विभाग</th>
+            <th>सिम्बॉल</th>
+            <th>दिशा</th>
+            <th>Qty</th>
+            <th>Entry Price</th>
+            <th>Live Price (LTP)</th>
+            <th>Stop-Loss / TSL</th>
+            <th>Target</th>
+            <th>Live P&L</th>
+            <th>स्थिती</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="tradeTableBody">
+          <tr><td colspan="13" class="empty-msg">अजून कोणताही ट्रेड घेतलेला नाही.</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
   <script>
-    const I18N = {
-      mr: {
-        swingBtn: "📈 स्विंग ट्रेडिंग (Equity)",
-        fnoBtn: "⚡ F&O टर्मिनल (Options)",
-        swingBanner: "<strong>📈 Swing Trading विभाग:</strong> प्रत्येक कार्डवर सक्रिय सिग्नलनुसार (BUY किंवा SELL) फक्त एकच स्पष्ट <strong>Entry Zone, Target आणि Stop Loss</strong> दिला आहे.",
-        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> वर <strong>NIFTY 50, BANK NIFTY व NIFTY 250/500</strong> आणि खाली F&O शेअर्ससाठी सुचवलेले <strong>Call/Put Strike (CE/PE)</strong> दिले आहेत. (Auto-Refresh: दर ६० सेकंदांनी)",
-        chartBtn: "📊 कँडलस्टिक चार्ट आणि विश्लेषण पहा",
-        allTab: "सर्व शेअर्स",
-        buyTab: "Buy झोन",
-        sellTab: "Sell झोन",
-        calcLabel: "भांडवलानुसार क्वांटिटी मोजा:",
-        loadingWait: "⏳ NSE सर्व्हरवरून ताजा डेटा आणत आहोत, कृपया १५–३० सेकंद प्रतीक्षा करा...",
-        disclaimer: "<strong>अस्वीकरण (Disclaimer):</strong> MarketEye Pro हे केवळ शैक्षणिक आणि तांत्रिक विश्लेषणासाठी (Educational & Analytical Purpose Only) तयार केलेले साधन आहे. आम्ही SEBI-नोंदणीकृत गुंतवणूक सल्लागार नाही. कोणताही ट्रेड घेण्यापूर्वी स्वतःचा अभ्यास करावा किंवा नोंदणीकृत आर्थिक सल्लागाराचा सल्ला घ्यावा."
-      },
-      hi: {
-        swingBtn: "📈 स्विंग ट्रेडिंग (Equity)",
-        fnoBtn: "⚡ F&O टर्मिनल (Options)",
-        swingBanner: "<strong>📈 Swing Trading विभाग:</strong> प्रत्येक कार्ड पर सक्रिय सिग्नल के अनुसार (BUY या SELL) केवल एक स्पष्ट <strong>Entry Zone, Target और Stop Loss</strong> दिया गया है।",
-        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> ऊपर <strong>NIFTY 50, BANK NIFTY व NIFTY 250/500</strong> और नीचे F&O शेयरों के लिए सुझाए गए <strong>Call/Put Strike (CE/PE)</strong> दिए गए हैं। (Auto-Refresh: हर 60 सेकंड में)",
-        chartBtn: "📊 कैंडलस्टिक चार्ट और विश्लेषण देखें",
-        allTab: "सभी शेयर",
-        buyTab: "Buy ज़ोन",
-        sellTab: "Sell ज़ोन",
-        calcLabel: "पूंजी के अनुसार क्वांटिटी गणना:",
-        loadingWait: "⏳ NSE सर्वर से ताज़ा डेटा लोड हो रहा है, कृपया 15–30 सेकंड प्रतीक्षा करें...",
-        disclaimer: "<strong>अस्वीकरण (Disclaimer):</strong> MarketEye Pro केवल शैक्षणिक और तकनीकी विश्लेषण (Educational & Analytical Purpose Only) के लिए बनाया गया है। हम SEBI-पंजीकृत निवेश सलाहकार नहीं हैं। कोई भी ट्रेड लेने से पहले अपना स्वयं का विश्लेषण करें या वित्तीय सलाहकार से परामर्श लें।"
-      },
-      en: {
-        swingBtn: "📈 Swing Trading (Equity)",
-        fnoBtn: "⚡ F&O टर्मिनल (Options)",
-        swingBanner: "<strong>📈 Swing Trading Section:</strong> Each card shows a single active trade plan (BUY or SELL) with clear <strong>Entry Zone, Target & Stop Loss</strong>.",
-        fnoBanner: "<strong>⚡ F&O Terminal (Options & Derivatives):</strong> Live <strong>NIFTY 50, BANK NIFTY & NIFTY 250/500</strong> overview and suggested <strong>Call/Put Strikes (CE/PE)</strong>. (Auto-Refresh: Every 60s)",
-        chartBtn: "📊 View Candlestick Chart & Analysis",
-        allTab: "All Stocks",
-        buyTab: "Buy Zone",
-        sellTab: "Sell Zone",
-        calcLabel: "Position Size Calculator:",
-        loadingWait: "⏳ Waking up server & fetching fresh NSE market data (15–30 seconds)...",
-        disclaimer: "<strong>Disclaimer:</strong> MarketEye Pro is built strictly for educational and technical analysis purposes only. We are not SEBI-registered investment advisors. Please do your own research or consult a certified financial advisor before trading."
-      }
-    };
-
-    let allStocks = [];
-    let currentMode = 'SWING';
+    let currentSegment = 'swing';
     let currentFilter = 'ALL';
-    let currentLang = localStorage.getItem('marketeye_lang') || 'mr';
-    let watchlist = JSON.parse(localStorage.getItem('marketeye_wl') || '["RELIANCE","TCS","HAL","BHARTIARTL"]');
-    let activeStock = null;
-    let refreshTimer = null;
+    let currentItems = [];
+    let symbolDirectory = { swing: [], commodity: [], forex: [] };
+    let cardPrefs = {};
+    let lastPricesMap = {};
 
-    document.getElementById('langSelect').value = currentLang;
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-wrapper')) {
+        document.getElementById('acDropdown').style.display = 'none';
+      }
+    });
 
-    function updateMarketStatus() {
-      const badge = document.getElementById('mktStatusBadge');
-      const now = new Date();
-      const istOffset = 5.5 * 60 * 60 * 1000;
-      const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffset);
-      const day = istDate.getDay();
-      const mins = istDate.getHours() * 60 + istDate.getMinutes();
+    function toggleBrokerDrawer() {
+      const el = document.getElementById('brokerDrawer');
+      el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+    }
 
-      const isWeekday = day >= 1 && day <= 5;
-      const isMarketHours = mins >= (9 * 60 + 15) && mins <= (15 * 60 + 30);
-
-      if (isWeekday && isMarketHours) {
-        badge.className = 'mkt-badge mkt-open';
-        badge.textContent = '● LIVE MARKET (NSE)';
-      } else {
-        badge.className = 'mkt-badge mkt-closed';
-        badge.textContent = '● MARKET CLOSED (Closing Data)';
+    async function saveBrokerCredentials() {
+      const payload = {
+        default_broker: document.getElementById('defaultBrokerSelect').value,
+        upstox_access_token: document.getElementById('upstoxTokenInput').value,
+        zerodha_api_key: document.getElementById('zerodhaKeyInput').value,
+        zerodha_access_token: document.getElementById('zerodhaTokenInput').value,
+      };
+      try {
+        const res = await fetch('/broker-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        document.getElementById('brokerSaveStatus').textContent =
+          `✅ सेव्ह झाले! (Upstox: ${data.upstox_connected ? 'Linked' : 'Not Set'} | Zerodha: ${data.zerodha_connected ? 'Linked' : 'Not Set'})`;
+      } catch (e) {
+        alert('Demat keys सेव्ह करताना त्रुटी आली.');
       }
     }
 
-    function changeLang(lang) {
-      currentLang = lang;
-      localStorage.setItem('marketeye_lang', lang);
-      applyTranslations();
-      renderCards(allStocks);
+    async function loadSymbolDirectory() {
+      try {
+        const res = await fetch('/symbols');
+        symbolDirectory = await res.json();
+      } catch (e) { console.error(e); }
     }
 
-    function applyTranslations() {
-      const t = I18N[currentLang];
-      document.getElementById('btnSwing').innerHTML = t.swingBtn;
-      document.getElementById('btnFno').innerHTML = t.fnoBtn;
-      document.getElementById('tabAll').textContent = t.allTab;
-      document.getElementById('tabBuy').textContent = t.buyTab;
-      document.getElementById('tabSell').textContent = t.sellTab;
-      document.getElementById('calcLabel').textContent = t.calcLabel;
-      document.getElementById('disclaimerFooter').innerHTML = t.disclaimer;
-      const banner = document.getElementById('sectionBanner');
-      banner.innerHTML = currentMode === 'SWING' ? t.swingBanner : t.fnoBanner;
+    function handleSearchInput() {
+      const q = document.getElementById('searchInput').value.trim().toUpperCase();
+      const dd = document.getElementById('acDropdown');
+      const list = symbolDirectory[currentSegment] || [];
+      const matches = q
+        ? list.filter(x => x.symbol.startsWith(q) || x.symbol.includes(q) || x.name.toUpperCase().includes(q))
+        : list.slice(0, 15);
+      if (!matches.length) { dd.style.display = 'none'; return; }
+      dd.innerHTML = matches.map(m => `
+        <div class="ac-item" onclick="selectSymbol('${m.symbol}')">
+          <span class="ac-sym">${m.symbol}</span>
+          <span class="ac-name">${m.name}</span>
+        </div>
+      `).join('');
+      dd.style.display = 'block';
     }
 
-    function setupAutoRefresh() {
-      if (refreshTimer) clearInterval(refreshTimer);
-      const intervalMs = currentMode === 'FNO' ? 60000 : 300000;
-      refreshTimer = setInterval(() => loadDashboard(true), intervalMs);
+    async function selectSymbol(sym) {
+      document.getElementById('searchInput').value = sym;
+      document.getElementById('acDropdown').style.display = 'none';
+      await searchCustom();
     }
 
-    function switchMode(mode) {
-      currentMode = mode;
-      const btnSwing = document.getElementById('btnSwing');
-      const btnFno = document.getElementById('btnFno');
-      const banner = document.getElementById('sectionBanner');
-      const idxSec = document.getElementById('indicesSection');
-      if (idxSec) idxSec.style.display = 'grid';
-
-      if (mode === 'SWING') {
-        btnSwing.className = 'mode-btn active-swing';
-        btnFno.className = 'mode-btn';
-        banner.className = 'section-banner';
-      } else {
-        btnSwing.className = 'mode-btn';
-        btnFno.className = 'mode-btn active-fno';
-        banner.className = 'section-banner fno-theme';
+    function updateIndicesDOM(data) {
+      if (!data) return;
+      const map = { nifty: data.nifty, banknifty: data.banknifty, dxy: data.dxy, gold: data.gold };
+      for (const [key, idx] of Object.entries(map)) {
+        if (!idx || idx.price === null || idx.price === undefined) continue;
+        const valEl = document.getElementById(`idx_${key}`);
+        const chgEl = document.getElementById(`idx_${key}_chg`);
+        if (valEl) valEl.textContent = idx.price.toLocaleString('en-IN');
+        if (chgEl) {
+          const cls = idx.change_pct >= 0 ? 'up' : 'down';
+          const sign = idx.change_pct >= 0 ? '+' : '';
+          chgEl.className = cls;
+          chgEl.style.fontWeight = '700';
+          chgEl.textContent = `${sign}${idx.change_pct}%`;
+        }
       }
-      applyTranslations();
-      setupAutoRefresh();
-      renderCards(allStocks);
     }
 
-    function updateWlCount() {
-      document.getElementById('wlCount').textContent = watchlist.length;
+    async function fetchIndices() {
+      try {
+        const res = await fetch('/indices');
+        updateIndicesDOM(await res.json());
+      } catch (e) { console.error(e); }
     }
 
-    function toggleWatchlist(e, sym) {
-      e.stopPropagation();
-      watchlist = watchlist.includes(sym) ? watchlist.filter(s => s !== sym) : [...watchlist, sym];
-      localStorage.setItem('marketeye_wl', JSON.stringify(watchlist));
-      updateWlCount();
-      renderCards(allStocks);
+    async function switchSegment(seg) {
+      currentSegment = seg;
+      document.getElementById('searchInput').value = '';
+      document.getElementById('acDropdown').style.display = 'none';
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.seg === seg));
+      await loadSignals();
     }
 
-    function formatIdx(valId, ocId, sentId, obj, fallbackLabel) {
-      const el = document.getElementById(valId);
-      const ocEl = document.getElementById(ocId);
-      const sentEl = document.getElementById(sentId);
-      if (!obj || !obj.price) {
-        el.innerHTML = `${fallbackLabel} <span style="color:#fbbf24;font-size:0.85rem">(Market Closed / Standby)</span>`;
-        ocEl.innerHTML = `<span class="oc-tag">PCR: <strong>-</strong></span><span class="oc-tag">Support: <strong style="color:#10b981">-</strong></span><span class="oc-tag">Resistance: <strong style="color:#ef4444">-</strong></span><span class="src-badge">Updates on Market Open</span>`;
-        return;
-      }
-      const cls = obj.change_pct >= 0 ? 'pos' : 'neg';
-      const sign = obj.change_pct >= 0 ? '+' : '';
-      el.innerHTML = `₹${obj.price.toLocaleString('en-IN')} <span class="${cls}" style="font-size:0.9rem">(${sign}${obj.change_pct}%)</span>`;
-      const oc = obj.option_chain || {};
-      if (sentEl) sentEl.textContent = oc.sentiment || '';
-      const srcLabel = oc.source || 'Derived OI Zone';
-      ocEl.innerHTML = `
-        <span class="oc-tag">PCR: <strong>${oc.pcr || '-'}</strong></span>
-        <span class="oc-tag">Support: <strong style="color:#10b981">${oc.support || '-'}</strong></span>
-        <span class="oc-tag">Resistance: <strong style="color:#ef4444">${oc.resistance || '-'}</strong></span>
-        <span class="src-badge">${srcLabel}</span>
-      `;
+    function setFilter(f) {
+      currentFilter = f;
+      document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.filter === f));
+      renderCards();
     }
 
-    function formatBroadIndices(idxRes) {
-      const el = document.getElementById('broadVal');
-      const ocEl = document.getElementById('broadOC');
-      const n250 = idxRes && (idxRes.nifty250 || idxRes.nifty_250);
-      const n500 = idxRes && (idxRes.nifty500 || idxRes.nifty_500);
-      if (n250 && n250.price) {
-        const cls = n250.change_pct >= 0 ? 'pos' : 'neg';
-        const sign = n250.change_pct >= 0 ? '+' : '';
-        el.innerHTML = `NIFTY 250: ₹${n250.price.toLocaleString('en-IN')} <span class="${cls}" style="font-size:0.88rem">(${sign}${n250.change_pct}%)</span>`;
-      } else {
-        el.innerHTML = `NIFTY 50 · 250 · 500 <span style="color:#38bdf8;font-size:0.82rem">(Tracked)</span>`;
-      }
-      const n500Txt = (n500 && n500.price) ? `NIFTY 500: <strong>₹${n500.price.toLocaleString('en-IN')}</strong>` : `Indices: <strong>NIFTY 50 · 250 · 500</strong>`;
-      ocEl.innerHTML = `<span class="oc-tag">${n500Txt}</span><span class="src-badge">Index Suite</span>`;
-    }
-
-    function renderCards(list) {
+    async function loadSignals() {
       const grid = document.getElementById('cardsGrid');
-      const status = document.getElementById('statusMsg');
-      const t = I18N[currentLang];
+      if (!currentItems.length) {
+        grid.innerHTML = `<div class="empty-msg">⚡ ${currentSegment.toUpperCase()} डेटा लोड होत आहे...</div>`;
+      }
+      try {
+        const res = await fetch(`/signals?segment=${currentSegment}`);
+        const data = await res.json();
+        currentItems = data.items || [];
+        renderCards();
+      } catch (e) {
+        grid.innerHTML = `<div class="empty-msg" style="color:var(--red);">सर्व्हरशी संपर्क होऊ शकला नाही.</div>`;
+      }
+    }
 
-      let filtered = currentMode === 'FNO' ? list.filter(s => s.is_fno) : list;
-      if (currentFilter === 'BUY') filtered = filtered.filter(s => s.side === 'BUY');
-      if (currentFilter === 'SELL') filtered = filtered.filter(s => s.side === 'SELL');
-      if (currentFilter === 'WATCHLIST') filtered = filtered.filter(s => watchlist.includes(s.symbol));
+    function getPref(sym) {
+      if (!cardPrefs[sym]) {
+        cardPrefs[sym] = {
+          budget: 10000,
+          slPct: 2,
+          tgtPct: 5,
+          tslEnabled: false,
+          tslPct: 1,
+          mode: 'PAPER',
+          manualEntry: ''
+        };
+      }
+      return cardPrefs[sym];
+    }
+
+    function computeCardNumbers(item, pref) {
+      const entry = (pref.mode === 'MANUAL_DEMAT' && parseFloat(pref.manualEntry) > 0)
+        ? parseFloat(pref.manualEntry)
+        : item.entry_price;
+      const dec = item.decimals || 2;
+      const budget = Math.max(100, parseFloat(pref.budget) || 10000);
+      const slPct = parseFloat(pref.slPct) || 2;
+      const tgtPct = parseFloat(pref.tgtPct) || 5;
+
+      const qty = entry > 0 ? Math.max(1, Math.floor(budget / entry)) : 1;
+      const invested = (qty * entry).toFixed(2);
+
+      let slPrice, tgtPrice;
+      if (item.side === 'BUY') {
+        slPrice = (entry * (1 - slPct / 100)).toFixed(dec);
+        tgtPrice = (entry * (1 + tgtPct / 100)).toFixed(dec);
+      } else {
+        slPrice = (entry * (1 + slPct / 100)).toFixed(dec);
+        tgtPrice = Math.max(0.0001, entry * (1 - tgtPct / 100)).toFixed(dec);
+      }
+
+      const maxLoss = (qty * Math.abs(entry - parseFloat(slPrice))).toFixed(2);
+      const expProfit = (qty * Math.abs(parseFloat(tgtPrice) - entry)).toFixed(2);
+      return { entry: entry.toFixed(dec), qty, invested, slPrice, tgtPrice, maxLoss, expProfit };
+    }
+
+    function updateCardCalc(sym) {
+      const item = currentItems.find(x => x.symbol === sym);
+      if (!item) return;
+      const pref = getPref(sym);
+      pref.budget = document.getElementById(`budget_${sym}`).value;
+      pref.slPct = document.getElementById(`sl_${sym}`).value;
+      pref.tgtPct = document.getElementById(`tgt_${sym}`).value;
+      pref.tslEnabled = document.getElementById(`tsl_chk_${sym}`).checked;
+      pref.tslPct = document.getElementById(`tsl_pct_${sym}`).value;
+      pref.mode = document.getElementById(`mode_${sym}`).value;
+
+      const tslSel = document.getElementById(`tsl_pct_${sym}`);
+      if (tslSel) tslSel.disabled = !pref.tslEnabled;
+
+      const manInp = document.getElementById(`manentry_${sym}`);
+      if (manInp) pref.manualEntry = manInp.value;
+
+      const manRow = document.getElementById(`manrow_${sym}`);
+      if (manRow) manRow.style.display = (pref.mode === 'MANUAL_DEMAT') ? 'block' : 'none';
+
+      const calc = computeCardNumbers(item, pref);
+      document.getElementById(`entryval_${sym}`).textContent = `${item.currency}${calc.entry}`;
+      document.getElementById(`slval_${sym}`).textContent = `${item.currency}${calc.slPrice}`;
+      document.getElementById(`tgtval_${sym}`).textContent = `${item.currency}${calc.tgtPrice}`;
+      document.getElementById(`qtysum_${sym}`).innerHTML =
+        `<span>📦 Qty: <b>${calc.qty}</b> (${item.currency}${calc.invested})</span>` +
+        `<span>Loss: <b class="down">-${item.currency}${calc.maxLoss}</b> | Profit: <b class="up">+${item.currency}${calc.expProfit}</b></span>`;
+    }
+
+    function renderCards() {
+      const grid = document.getElementById('cardsGrid');
+      let filtered = [...currentItems];
+      if (currentFilter === 'BUY') filtered = filtered.filter(i => i.side === 'BUY');
+      else if (currentFilter === 'SELL') filtered = filtered.filter(i => i.side === 'SELL');
 
       if (!filtered.length) {
-        status.textContent = 'No stocks found for this filter.';
-        grid.innerHTML = '';
+        grid.innerHTML = `<div class="empty-msg">या फिल्टरमध्ये सध्या कोणतेही सिग्नल्स नाहीत.</div>`;
         return;
       }
-      status.textContent = `Showing ${filtered.length} NSE Stocks`;
 
-      grid.innerHTML = filtered.map(s => {
-        const isBuy = s.side === 'BUY';
-        const chgCls = s.change_pct >= 0 ? 'pos' : 'neg';
-        const sign = s.change_pct >= 0 ? '+' : '';
-        const isSaved = watchlist.includes(s.symbol);
-        const noteText = (s.notes && s.notes[currentLang]) ? s.notes[currentLang] : '';
-
-        const activePlanHtml = isBuy
-          ? `<div class="active-zone">
-               <div><strong style="color:#10b981">Buy Zone:</strong> ${s.trade_zones.buy_zone}</div>
-               <div><strong>Target (Profit):</strong> <span style="color:#fbbf24">₹${s.trade_zones.buy_target}</span> | <strong>Stop Loss:</strong> <span style="color:#f87171">₹${s.trade_zones.buy_sl}</span></div>
-             </div>`
-          : `<div class="active-zone sell-zone">
-               <div><strong style="color:#ef4444">Sell Zone:</strong> ${s.trade_zones.sell_zone}</div>
-               <div><strong>Target:</strong> <span style="color:#fbbf24">₹${s.trade_zones.sell_target}</span> | <strong>Stop Loss:</strong> <span style="color:#f87171">₹${s.trade_zones.sell_sl}</span></div>
-             </div>`;
-
-        const bodyHtml = currentMode === 'SWING' ? `
-          <div class="strength-box">
-            <div class="strength-top">
-              <span>Trade Strength: ${s.strength_score}/100 (${s.strength_label})</span>
-            </div>
-            <div class="strength-sub">${s.strength_detail}</div>
-          </div>
-          ${noteText ? `<div class="ai-note">${noteText}</div>` : ''}
-          ${activePlanHtml}
-          <div class="pillars">
-            <span class="pill">20-EMA: ₹${s.ema20}</span>
-            <span class="pill">50-EMA: ₹${s.ema50}</span>
-            <span class="pill">RSI: ${s.rsi}</span>
-            <span class="pill">Vol: ${s.volume_spike}</span>
-          </div>
-        ` : `
-          <div class="strength-box">
-            <div class="strength-top">
-              <span style="color:#38bdf8">${s.fno_strike}</span>
-              <span>${s.fno_bias}</span>
-            </div>
-            <div class="strength-sub">Support: ₹${s.support} | Resistance: ₹${s.resistance}</div>
-          </div>
-          ${noteText ? `<div class="ai-note">${noteText}</div>` : ''}
-          ${activePlanHtml}
-        `;
+      grid.innerHTML = filtered.map(item => {
+        const sym = item.symbol;
+        const pref = getPref(sym);
+        const calc = computeCardNumbers(item, pref);
+        const chgCls = item.change_pct >= 0 ? 'up' : 'down';
+        const sign = item.change_pct >= 0 ? '+' : '';
+        const isBuy = item.side === 'BUY';
+        const sideTag = isBuy ? 'tag-buy' : 'tag-sell';
+        const btnCls = isBuy ? 'btn-buy' : 'btn-sell';
+        const entryLabel = item.segment === 'swing'
+          ? (isBuy ? 'MONDAY BUY' : 'MONDAY SELL')
+          : (isBuy ? 'BUY ENTRY' : 'SELL ENTRY');
 
         return `
-          <div class="card" onclick="openStockModal('${s.symbol}')">
-            <div class="card-top">
+          <div class="card">
+            <div class="card-head">
               <div>
-                <div class="sym-row">
-                  <button class="star-btn ${isSaved ? 'saved' : ''}" onclick="toggleWatchlist(event, '${s.symbol}')">★</button>
-                  <span class="sym">${s.symbol}</span>
-                </div>
-                <div class="cname">${s.name}</div>
+                <div class="sym">${sym} <span class="tag ${sideTag}" style="margin-left:6px;">${item.signal}</span></div>
+                <div class="sub-name">${item.name} • RSI: <b>${item.rsi}</b> • EMA20: <b>${item.ema20}</b></div>
               </div>
-              <span class="badge ${isBuy ? 'buy' : 'sell'}">${s.signal}</span>
+              <div class="price-box">
+                <div class="price" id="liveprice_${sym}">${item.currency}${item.price}</div>
+                <div class="${chgCls}" id="livechg_${sym}" style="font-size:0.8rem; font-weight:600;">${sign}${item.change_pct}%</div>
+              </div>
             </div>
-            <div class="price-row">
-              <div class="price">₹${s.price} <span class="${chgCls}" style="font-size:0.9rem">(${sign}${s.change_pct}%)</span></div>
+
+            <div class="calc-box">
+              <div class="calc-inputs">
+                <div class="mini-field">
+                  <label>💰 बजेट (${item.currency})</label>
+                  <input type="number" id="budget_${sym}" value="${pref.budget}" step="1000" oninput="updateCardCalc('${sym}')" />
+                </div>
+                <div class="mini-field">
+                  <label>🛑 Stop-Loss %</label>
+                  <select id="sl_${sym}" onchange="updateCardCalc('${sym}')">
+                    <option value="1" ${pref.slPct == 1 ? 'selected' : ''}>1% SL</option>
+                    <option value="2" ${pref.slPct == 2 ? 'selected' : ''}>2% SL</option>
+                    <option value="3" ${pref.slPct == 3 ? 'selected' : ''}>3% SL</option>
+                    <option value="5" ${pref.slPct == 5 ? 'selected' : ''}>5% SL</option>
+                  </select>
+                </div>
+                <div class="mini-field">
+                  <label>🎯 Target %</label>
+                  <select id="tgt_${sym}" onchange="updateCardCalc('${sym}')">
+                    <option value="3" ${pref.tgtPct == 3 ? 'selected' : ''}>3% Target</option>
+                    <option value="5" ${pref.tgtPct == 5 ? 'selected' : ''}>5% Target</option>
+                    <option value="8" ${pref.tgtPct == 8 ? 'selected' : ''}>8% Target</option>
+                    <option value="10" ${pref.tgtPct == 10 ? 'selected' : ''}>10% Target</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Optional Trailing Stop-Loss Checkbox + Trail % -->
+              <div class="tsl-row">
+                <label class="tsl-check">
+                  <input type="checkbox" id="tsl_chk_${sym}" ${pref.tslEnabled ? 'checked' : ''} onchange="updateCardCalc('${sym}')" />
+                  <span>Trailing Stop-Loss (ऐच्छिक)</span>
+                </label>
+                <select id="tsl_pct_${sym}" ${pref.tslEnabled ? '' : 'disabled'} onchange="updateCardCalc('${sym}')">
+                  <option value="0.5" ${pref.tslPct == 0.5 ? 'selected' : ''}>0.5% ने सरकवा</option>
+                  <option value="1" ${pref.tslPct == 1 ? 'selected' : ''}>1% ने सरकवा</option>
+                  <option value="1.5" ${pref.tslPct == 1.5 ? 'selected' : ''}>1.5% ने सरकवा</option>
+                  <option value="2" ${pref.tslPct == 2 ? 'selected' : ''}>2% ने सरकवा</option>
+                </select>
+              </div>
+
+              <div class="manual-row" id="manrow_${sym}" style="display:${pref.mode === 'MANUAL_DEMAT' ? 'block' : 'none'};">
+                <input type="number" id="manentry_${sym}" value="${pref.manualEntry}" placeholder="Manual Limit Price टाका (Demat ऑर्डरसाठी)" oninput="updateCardCalc('${sym}')" />
+              </div>
+
+              <div class="levels-grid">
+                <div>
+                  <div class="lvl-label">${entryLabel}</div>
+                  <div class="lvl-val" id="entryval_${sym}" style="color:var(--accent);">${item.currency}${calc.entry}</div>
+                </div>
+                <div>
+                  <div class="lvl-label">STOP-LOSS PRICE</div>
+                  <div class="lvl-val down" id="slval_${sym}">${item.currency}${calc.slPrice}</div>
+                </div>
+                <div>
+                  <div class="lvl-label">TARGET PRICE</div>
+                  <div class="lvl-val up" id="tgtval_${sym}">${item.currency}${calc.tgtPrice}</div>
+                </div>
+              </div>
+
+              <div class="qty-summary" id="qtysum_${sym}">
+                <span>📦 Qty: <b>${calc.qty}</b> (${item.currency}${calc.invested})</span>
+                <span>Loss: <b class="down">-${item.currency}${calc.maxLoss}</b> | Profit: <b class="up">+${item.currency}${calc.expProfit}</b></span>
+              </div>
             </div>
-            ${bodyHtml}
-            <div class="card-foot">
-              <button class="chart-btn" onclick="event.stopPropagation(); openStockModal('${s.symbol}')">${t.chartBtn}</button>
+
+            <div class="exec-row">
+              <select id="mode_${sym}" onchange="updateCardCalc('${sym}')">
+                <option value="PAPER" ${pref.mode === 'PAPER' ? 'selected' : ''}>🧪 Paper Trade (अभ्यास)</option>
+                <option value="MANUAL_DEMAT" ${pref.mode === 'MANUAL_DEMAT' ? 'selected' : ''}>📝 Manual Trade (Demat)</option>
+                <option value="ALGO_DEMAT" ${pref.mode === 'ALGO_DEMAT' ? 'selected' : ''}>⚡ Algo Trade (Demat)</option>
+              </select>
+              <button class="btn ${btnCls}" onclick="submitCardOrder('${sym}')">🚀 ${item.side} लावा</button>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    function setFilter(type, btn) {
-      currentFilter = type;
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
-      renderCards(allStocks);
-    }
-
-    async function loadDashboard(silent = false) {
-      updateMarketStatus();
-      const btn = document.getElementById('refreshBtn');
-      const status = document.getElementById('statusMsg');
-      const t = I18N[currentLang];
-      if (!silent) {
-        btn.disabled = true;
-        btn.textContent = 'Loading...';
-        status.textContent = t.loadingWait;
-      }
-      updateWlCount();
-
-      const mergedSyms = Array.from(new Set([...watchlist, "BHARTIARTL", "RELIANCE", "TCS", "HDFCBANK", "INFY", "SBIN", "TATAMOTORS", "TATASTEEL", "ZOMATO", "IRCTC", "HAL", "BEL", "ITC", "AXISBANK", "WIPRO", "IDEA", "YESBANK", "SUZLON"]));
-
+    async function searchCustom() {
+      const inp = document.getElementById('searchInput');
+      const sym = inp.value.trim().toUpperCase();
+      document.getElementById('acDropdown').style.display = 'none';
+      if (!sym) return;
       try {
-        const [idxRes, sigRes] = await Promise.all([
-          fetch('/indices').then(r => r.json()).catch(() => ({})),
-          fetch(`/signals?symbols=${mergedSyms.join(',')}`).then(r => r.json())
-        ]);
-        formatIdx('niftyVal', 'niftyOC', 'niftySent', idxRes.nifty, 'NIFTY 50');
-        formatIdx('bnVal', 'bnOC', 'bnSent', idxRes.banknifty, 'BANK NIFTY');
-        formatBroadIndices(idxRes);
-        allStocks = sigRes.stocks || [];
-        renderCards(allStocks);
-        const modeTxt = currentMode === 'FNO' ? '60s Auto' : '5m Auto';
-        document.getElementById('lastUpdated').textContent = `Updated: ${new Date().toLocaleTimeString('en-IN')} (${modeTxt})`;
-      } catch (err) {
-        if (!silent) status.textContent = 'Server waking up... Please click Refresh once.';
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Refresh';
-      }
+        const res = await fetch(`/search/${encodeURIComponent(sym)}?segment=${currentSegment}`);
+        if (!res.ok) { alert(`'${sym}' सापडले नाही.`); return; }
+        const data = await res.json();
+        if (data.item) {
+          currentItems = [data.item, ...currentItems.filter(x => x.symbol !== data.item.symbol)];
+          renderCards();
+        }
+      } catch (e) { alert('Search करताना त्रुटी आली.'); }
     }
 
-    let searchTimer;
-    function onSearchInput(val) {
-      clearTimeout(searchTimer);
-      const box = document.getElementById('suggestions');
-      if (!val.trim()) { box.innerHTML = ''; return; }
-      searchTimer = setTimeout(async () => {
-        const res = await fetch(`/suggest/${encodeURIComponent(val.trim())}`).then(r => r.json());
-        box.innerHTML = (res.suggestions || []).map(item =>
-          `<div class="sug-item" onclick="selectStock('${item.symbol}')"><strong>${item.symbol}</strong> - ${item.name}</div>`
-        ).join('');
-      }, 250);
+    async function submitCardOrder(sym) {
+      const pref = getPref(sym);
+      const payload = {
+        symbol: sym,
+        segment: currentSegment,
+        budget: parseFloat(pref.budget) || 10000,
+        sl_pct: parseFloat(pref.slPct) || 2,
+        target_pct: parseFloat(pref.tgtPct) || 5,
+        tsl_enabled: !!pref.tslEnabled,
+        tsl_pct: parseFloat(pref.tslPct) || 1,
+        trade_mode: pref.mode || 'PAPER',
+        manual_entry: pref.manualEntry ? parseFloat(pref.manualEntry) : null,
+      };
+      try {
+        const res = await fetch('/order/place', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert('⚠️ ' + (data.error || 'ऑर्डर लागली नाही.'));
+          return;
+        }
+        if (data.message) alert('✅ ' + data.message);
+        if (data.orders) renderOrderTable(data.orders);
+      } catch (e) { console.error(e); }
     }
 
-    function selectStock(sym) {
-      document.getElementById('suggestions').innerHTML = '';
-      document.getElementById('searchInput').value = sym;
-      openStockModal(sym);
+    async function closeOrder(id) {
+      try {
+        const res = await fetch(`/orders/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.orders) renderOrderTable(data.orders);
+      } catch (e) { console.error(e); }
     }
 
-    async function openStockModal(sym) {
-      const modal = document.getElementById('stockModal');
-      modal.classList.add('open');
-      document.getElementById('mTitle').textContent = `${sym} — Loading Candlestick Chart...`;
-      document.getElementById('mSub').textContent = '';
+    function renderOrderTable(orders) {
+      const tbody = document.getElementById('tradeTableBody');
+      const openOrders = orders.filter(o => o.status === 'OPEN');
+      document.getElementById('openTradeCount').textContent = `${openOrders.length} Active`;
 
-      const res = await fetch(`/search/${sym}`).then(r => r.json());
-      if (!res.stock) {
-        document.getElementById('mTitle').textContent = res.error || 'Error loading stock';
+      const totalPnl = orders.reduce((acc, o) => acc + (parseFloat(o.pnl) || 0), 0);
+      const totalEl = document.getElementById('totalLivePnl');
+      totalEl.className = totalPnl >= 0 ? 'up' : 'down';
+      totalEl.textContent = `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}`;
+
+      if (!orders.length) {
+        tbody.innerHTML = `<tr><td colspan="13" class="empty-msg">अजून कोणताही ट्रेड घेतलेला नाही.</td></tr>`;
         return;
       }
-      const s = res.stock;
-      activeStock = s;
-      const isBuy = s.side === 'BUY';
-      document.getElementById('mTitle').textContent = `${s.symbol} — ₹${s.price} (${s.signal})`;
-      document.getElementById('mSub').textContent = `${s.name} | Trade Strength: ${s.strength_score}/100`;
 
-      const oc = s.option_chain || {};
-      const srcLabel = oc.source || 'Derived OI Zone';
-      document.getElementById('mOC').innerHTML = `
-        <span class="oc-tag">Option PCR: <strong>${oc.pcr || '-'}</strong></span>
-        <span class="oc-tag">Sentiment: <strong>${oc.sentiment || '-'}</strong></span>
-        <span class="oc-tag">Support: <strong style="color:#10b981">₹${oc.support || '-'}</strong></span>
-        <span class="oc-tag">Resistance: <strong style="color:#ef4444">₹${oc.resistance || '-'}</strong></span>
-        <span class="src-badge">${srcLabel}</span>
-      `;
-
-      const zBox = document.getElementById('mZones');
-      if (isBuy) {
-        zBox.className = 'active-zone';
-        zBox.innerHTML = `<div><strong style="color:#10b981">Active Buy Zone:</strong> ${s.trade_zones.buy_zone} | <strong>Target:</strong> <span style="color:#fbbf24">₹${s.trade_zones.buy_target}</span> | <strong>Stop Loss:</strong> <span style="color:#f87171">₹${s.trade_zones.buy_sl}</span></div>`;
-      } else {
-        zBox.className = 'active-zone sell-zone';
-        zBox.innerHTML = `<div><strong style="color:#ef4444">Active Sell Zone:</strong> ${s.trade_zones.sell_zone} | <strong>Target:</strong> <span style="color:#fbbf24">₹${s.trade_zones.sell_target}</span> | <strong>Stop Loss:</strong> <span style="color:#f87171">₹${s.trade_zones.sell_sl}</span></div>`;
-      }
-
-      updateCalc();
-      drawCandlestickChart(s);
+      tbody.innerHTML = orders.map(o => {
+        const pnl = parseFloat(o.pnl) || 0;
+        const pnlCls = pnl >= 0 ? 'up' : 'down';
+        const pnlSign = pnl >= 0 ? '+' : '';
+        const tslBadge = o.tsl_enabled
+          ? `<br><span class="tag tag-tsl" style="font-size:0.65rem;">TSL ${o.tsl_pct}%${o.tsl_moved ? ' (Trailed!)' : ''}</span>`
+          : '';
+        return `
+          <tr>
+            <td><b>${o.id}</b><br><span style="font-size:0.7rem;color:var(--muted);">${o.time}</span></td>
+            <td><span class="tag">${o.mode}</span></td>
+            <td>${o.segment}</td>
+            <td><b>${o.symbol}</b></td>
+            <td class="${o.side === 'BUY' ? 'up' : 'down'}"><b>${o.side}</b></td>
+            <td><b>${o.qty}</b></td>
+            <td>${o.currency}${o.entry}</td>
+            <td><b>${o.currency}${o.ltp ?? o.entry}</b></td>
+            <td class="down">${o.currency}${o.stop_loss}${tslBadge}</td>
+            <td class="up">${o.currency}${o.target} (${o.tgt_pct}%)</td>
+            <td class="${pnlCls}"><b>${pnlSign}${o.currency}${pnl.toFixed(2)} (${pnlSign}${o.pnl_pct || 0}%)</b></td>
+            <td><b>${o.status}</b></td>
+            <td>
+              ${o.status === 'OPEN'
+                ? `<button class="btn" style="padding:4px 8px;font-size:0.75rem;" onclick="closeOrder('${o.id}')">Exit</button>`
+                : `<span style="color:var(--muted);font-size:0.75rem;">${o.status}</span>`}
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
-    function updateCalc() {
-      if (!activeStock) return;
-      const cap = parseFloat(document.getElementById('capInput').value) || 0;
-      const qty = Math.floor(cap / activeStock.price);
-      const riskPerShare = Math.abs(activeStock.price - activeStock.stop_loss);
-      const rewardPerShare = Math.abs(activeStock.target - activeStock.price);
-      const rr = riskPerShare > 0 ? (rewardPerShare / riskPerShare).toFixed(2) : '2.0';
-      document.getElementById('calcResult').textContent =
-        `Qty: ${qty} shares | Max Risk: ₹${Math.round(qty * riskPerShare)} | Target Profit: ₹${Math.round(qty * rewardPerShare)} (R:R 1:${rr})`;
+    async function pollLiveTicks() {
+      try {
+        const res = await fetch('/live-ticks');
+        const data = await res.json();
+        if (data.server_time) {
+          document.getElementById('lastUpdated').textContent = 'Live: ' + data.server_time;
+        }
+        if (data.indices) updateIndicesDOM(data.indices);
+
+        if (data.ticks) {
+          for (const item of currentItems) {
+            const tick = data.ticks[item.symbol];
+            if (!tick) continue;
+            const prevP = lastPricesMap[item.symbol];
+            lastPricesMap[item.symbol] = tick.price;
+            item.price = tick.price;
+            item.change_pct = tick.change_pct;
+            item.entry_price = tick.entry_price;
+
+            const priceEl = document.getElementById(`liveprice_${item.symbol}`);
+            const chgEl = document.getElementById(`livechg_${item.symbol}`);
+            if (priceEl) {
+              priceEl.textContent = `${item.currency}${tick.price}`;
+              if (prevP !== undefined && prevP !== tick.price) {
+                priceEl.classList.remove('tick-up', 'tick-down');
+                void priceEl.offsetWidth;
+                priceEl.classList.add(tick.price > prevP ? 'tick-up' : 'tick-down');
+              }
+            }
+            if (chgEl) {
+              chgEl.className = tick.change_pct >= 0 ? 'up' : 'down';
+              chgEl.textContent = `${tick.change_pct >= 0 ? '+' : ''}${tick.change_pct}%`;
+            }
+          }
+        }
+
+        if (data.orders) renderOrderTable(data.orders);
+      } catch (e) { /* silent retry */ }
     }
 
-    function closeModal() {
-      document.getElementById('stockModal').classList.remove('open');
+    async function refreshAll() {
+      await Promise.all([fetchIndices(), loadSymbolDirectory(), loadSignals()]);
+      await pollLiveTicks();
     }
 
-    function drawCandlestickChart(s) {
-      const canvas = document.getElementById('priceChart');
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const chart = s.chart;
-      if (!chart || !chart.candles || !chart.candles.length) return;
-
-      const candles = chart.candles;
-      const emas = chart.ema20;
-      const highs = candles.map(c => c.high);
-      const lows = candles.map(c => c.low);
-      const minV = Math.min(...lows, s.stop_loss) * 0.992;
-      const maxV = Math.max(...highs, s.target) * 1.008;
-
-      const padL = 16, padR = 54, padT = 16, padB = 22;
-      const w = canvas.width - padL - padR;
-      const h = canvas.height - padT - padB;
-      const getX = i => padL + ((i + 0.5) / candles.length) * w;
-      const getY = v => padT + h - ((v - minV) / (maxV - minV || 1)) * h;
-
-      ctx.strokeStyle = '#1e293b';
-      ctx.fillStyle = '#64748b';
-      ctx.font = '10px sans-serif';
-      for (let g = 0; g <= 4; g++) {
-        const y = padT + (h / 4) * g;
-        const val = (maxV - ((maxV - minV) / 4) * g).toFixed(0);
-        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(canvas.width - padR, y); ctx.stroke();
-        ctx.fillText('₹' + val, canvas.width - padR + 4, y + 3);
-      }
-
-      const drawLevel = (price, color, label) => {
-        const y = getY(price);
-        ctx.save();
-        ctx.strokeStyle = color;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(canvas.width - padR, y); ctx.stroke();
-        ctx.fillStyle = color;
-        ctx.fillText(`${label} ₹${price}`, padL + 4, y - 3);
-        ctx.restore();
-      };
-      drawLevel(s.target, '#fbbf24', 'TGT');
-      drawLevel(s.stop_loss, '#f87171', 'SL');
-
-      const candleW = Math.max(4, (w / candles.length) * 0.6);
-      candles.forEach((c, i) => {
-        const x = getX(i);
-        const isUp = c.close >= c.open;
-        ctx.strokeStyle = isUp ? '#10b981' : '#ef4444';
-        ctx.fillStyle = isUp ? '#10b981' : '#ef4444';
-        ctx.beginPath();
-        ctx.moveTo(x, getY(c.high));
-        ctx.lineTo(x, getY(c.low));
-        ctx.stroke();
-
-        const top = getY(Math.max(c.open, c.close));
-        const bot = getY(Math.min(c.open, c.close));
-        ctx.fillRect(x - candleW / 2, top, candleW, Math.max(2, bot - top));
-      });
-
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      emas.forEach((v, i) => i === 0 ? ctx.moveTo(getX(i), getY(v)) : ctx.lineTo(getX(i), getY(v)));
-      ctx.stroke();
-    }
-
-    updateMarketStatus();
-    applyTranslations();
-    setupAutoRefresh();
-    loadDashboard();
+    refreshAll();
+    setInterval(pollLiveTicks, 700);
   </script>
 </body>
 </html>
